@@ -1,8 +1,9 @@
 defmodule Rafty.RPC do
   defmodule AppendEntriesRequest do
     defstruct [
+      :from,
+      :to,
       :term_index,
-      :leader_id,
       :prev_log_index,
       :prev_log_term_index,
       :entries,
@@ -12,6 +13,8 @@ defmodule Rafty.RPC do
 
   defmodule AppendEntriesResponse do
     defstruct [
+      :from,
+      :to,
       :term_index,
       :success
     ]
@@ -19,8 +22,9 @@ defmodule Rafty.RPC do
 
   defmodule RequestVoteRequest do
     defstruct [
+      :from,
+      :to,
       :term_index,
-      :candidate_id,
       :last_log_index,
       :last_log_term_index
     ]
@@ -28,6 +32,8 @@ defmodule Rafty.RPC do
 
   defmodule RequestVoteResponse do
     defstruct [
+      :from,
+      :to,
       :term_index,
       :vote_granted
     ]

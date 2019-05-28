@@ -10,6 +10,7 @@ defmodule Rafty.Supervisor do
       {Task.Supervisor, name: Rafty.RPC.Supervisor},
       Rafty.ServersSupervisor
     ]
+
     Supervisor.init(children, strategy: :one_for_one)
   end
 end
