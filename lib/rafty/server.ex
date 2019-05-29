@@ -17,7 +17,11 @@ defmodule Rafty.Server do
 
   def init({server_name, node_name}) do
     Logger.info("#{server_name}:#{node_name}: Started")
-    {:ok, %State{server_name: server_name, node_name: node_name} |> convert_to_follower(0) |> refresh_timer()}
+
+    {:ok,
+     %State{server_name: server_name, node_name: node_name}
+     |> convert_to_follower(0)
+     |> refresh_timer()}
   end
 
   def append_entries(server_name, node_name, rpc) do
@@ -93,6 +97,7 @@ defmodule Rafty.Server do
 
   def handle_cast({:request_vote, rpc}, state) do
     Logger.info("#{state.server_name}:#{state.node_name}: Received request_vote")
+
     vote_granted =
       cond do
         # Section 5.1: Server rejects all requests with stale term numbers.
@@ -133,6 +138,7 @@ defmodule Rafty.Server do
 
   def handle_info({:heartbeat_timer, timer_ref}, %{timer_state: {_timer, timer_ref}} = state) do
     Logger.info("#{state.server_name}:#{state.node_name}: Received heartbeat_timer")
+
     RPC.broadcast(
       :append_entries_request,
       %RPC.AppendEntriesRequest{
@@ -149,6 +155,7 @@ defmodule Rafty.Server do
 
   defp add_vote(state, voter) do
     new_votes = MapSet.put(state.votes, voter)
+
     if (state.neighbours |> length |> div(2)) + 1 <= MapSet.size(new_votes),
       do: state |> convert_to_leader(),
       else: %{state | votes: new_votes}
@@ -156,6 +163,7 @@ defmodule Rafty.Server do
 
   defp refresh_timer(state) do
     Logger.info("#{state.server_name}:#{state.node_name}: Refreshing timer")
+
     if state.timer_state != nil do
       {timer, _timer_ref} = state.timer_state
       Process.cancel_timer(timer)
@@ -197,11 +205,13 @@ defmodule Rafty.Server do
         next_index: %{},
         match_index: %{},
         votes: MapSet.new()
-    } |> add_vote(state.server_name)
+    }
+    |> add_vote(state.server_name)
   end
 
   defp convert_to_follower(state, new_term_index) do
     Logger.info("#{state.server_name}:#{state.node_name}: Converting to follower")
+
     %{
       state
       | term_index: new_term_index,
@@ -215,6 +225,7 @@ defmodule Rafty.Server do
 
   defp convert_to_leader(state) do
     Logger.info("#{state.server_name}:#{state.node_name}: Converting to leader")
+
     %{
       state
       | voted_for: nil,
