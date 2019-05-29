@@ -1,5 +1,5 @@
 defmodule Rafty.Server.State do
-  defstruct current_term_index: 0,
+  defstruct term_index: 0,
             voted_for: nil,
             log: [],
             commit_index: 0,
