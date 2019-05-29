@@ -39,11 +39,14 @@ defmodule Rafty.RPC do
     ]
   end
 
-  def broadcast(rpc) do
-    nil
+  def broadcast(rpc_type, rpc, neighbours) do
+    neighbours
+    |> Enum.each(fn neighbour ->
+      send_rpc(rpc_type, %{rpc | to: neighbour})
+    end)
   end
 
-  def send_rpc(rpc) do
-    nil
+  def send_rpc(rpc_type, rpc) do
+    GenServer.cast(rpc.to, {rpc_type, rpc})
   end
 end

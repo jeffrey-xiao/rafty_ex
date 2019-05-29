@@ -8,7 +8,7 @@ defmodule Rafty.Server.State do
             node_name: nil,
             server_state: :follower,
             neighbours: [],
-            timer: nil,
+            timer_state: nil,
             # Leader specific state.
             next_index: %{},
             match_index: %{},
