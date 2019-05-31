@@ -67,7 +67,7 @@ defmodule Rafty.RPC do
     |> case do
       %AppendEntriesResponse{} = response -> GenServer.cast(rpc.from, response)
       %RequestVoteResponse{} = response -> GenServer.cast(rpc.from, response)
-      response -> Logger.error("#{inspect(rpc)} yielded #{response}")
+      response -> Logger.error("Expected response: #{inspect(rpc)} yielded #{response}")
     end
   end
 end

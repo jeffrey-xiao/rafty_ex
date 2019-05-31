@@ -2,10 +2,10 @@ defmodule Rafty.Server.Supervisor do
   use Supervisor
 
   def start_link({server_name, _node_name, _cluster_config} = args) do
-    Supervisor.start_link(__MODULE__, args, name: server_supervisor_name(server_name))
+    Supervisor.start_link(__MODULE__, args, name: name(server_name))
   end
 
-  def server_supervisor_name(server_name) do
+  def name(server_name) do
     :"ServerSupervisor#{server_name}"
   end
 

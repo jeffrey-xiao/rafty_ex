@@ -10,6 +10,38 @@ defmodule Rafty.ServersSupervisor do
     DynamicSupervisor.start_child(__MODULE__, child_spec)
   end
 
+  def execute(server_name, timeout \\ 5000) do
+    nil
+  end
+
+  def query(server_name, timeout \\ 5000) do
+    nil
+  end
+
+  def query(server_name, timeout \\ 5000) do
+    nil
+  end
+
+  def get_leader(server_name, timeout \\ 5000) do
+    nil
+  end
+
+  def catch_exit(func, ref) do
+    try do
+      func.()
+    catch
+      :exit, {msg, _} when msg in [:noproc, :normal] -> {:error, :noproc, ref}
+      :exit, {:timeout, _} -> {:error, :timeout, ref}
+    end
+  end
+
+  def terminate_server(server_name) do
+    DynamicSupervisor.terminate_child(
+      __MODULE__,
+      Process.whereis(Rafty.Server.Supervisor.name(server_name))
+    )
+  end
+
   def init(_args) do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
