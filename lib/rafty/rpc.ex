@@ -1,5 +1,13 @@
 defmodule Rafty.RPC do
   defmodule AppendEntriesRequest do
+    @enforce_keys [
+      :from,
+      :term_index,
+      :prev_log_index,
+      :prev_log_term_index,
+      :entries,
+      :leader_commit_index
+    ]
     defstruct [
       :from,
       :to,
@@ -41,19 +49,14 @@ defmodule Rafty.RPC do
     ]
   end
 
-  def broadcast(rpc_type, rpc, neighbours) do
-    require Logger
-    IO.inspect(neighbours)
+  def broadcast(rpc, neighbours) do
     neighbours
     |> Enum.each(fn neighbour ->
-      IO.puts("NEIGHBOUR IS #{inspect(neighbour)}")
-      send_rpc(rpc_type, %{rpc | to: neighbour})
+      send_rpc(%{rpc | to: neighbour})
     end)
   end
 
-  def send_rpc(rpc_type, rpc) do
-    require Logger
-    Logger.info("#{inspect(rpc.from)} sending to #{inspect(rpc.to)} message #{inspect(rpc)}")
-    GenServer.cast(rpc.to, {rpc_type, rpc})
+  def send_rpc(rpc) do
+    GenServer.cast(rpc.to, rpc)
   end
 end
