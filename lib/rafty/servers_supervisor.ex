@@ -5,8 +5,8 @@ defmodule Rafty.ServersSupervisor do
     DynamicSupervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 
-  def start_server(server_name, cluster_config) do
-    child_spec = {Rafty.Server.Supervisor, {server_name, node(), cluster_config}}
+  def start_server(server_name, cluster_config, fsm_module) do
+    child_spec = {Rafty.Server.Supervisor, {server_name, node(), cluster_config, fsm_module}}
     DynamicSupervisor.start_child(__MODULE__, child_spec)
   end
 
@@ -18,7 +18,7 @@ defmodule Rafty.ServersSupervisor do
     nil
   end
 
-  def query(server_name, timeout \\ 5000) do
+  def status(server_name, timeout \\ 5000) do
     nil
   end
 
