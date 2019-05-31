@@ -21,7 +21,7 @@ defmodule Rafty.Server do
      |> refresh_timer()}
   end
 
-  def handle_cast(%RPC.AppendEntriesRequest{} = rpc, state) do
+  def handle_call(%RPC.AppendEntriesRequest{} = rpc, _from, state) do
     Logger.info("#{inspect(state.id)}: Received append_entries_request")
 
     state =
@@ -71,38 +71,17 @@ defmodule Rafty.Server do
       |> advance_log()
       |> refresh_timer()
 
-    RPC.send_rpc(%RPC.AppendEntriesResponse{
+    {:reply, %RPC.AppendEntriesResponse{
       from: rpc.to,
       to: rpc.from,
       term_index: state.term_index,
       last_applied: state.last_applied,
       last_log_index: length(state.log),
       success: success
-    })
-
-    {:noreply, state}
+    },state}
   end
 
-  def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
-    Logger.info("#{inspect(state.id)}: Received append_entries_response")
-
-    state =
-      if rpc.term_index > state.term_index,
-        do: convert_to_follower(state, rpc.term_index),
-        else: state
-
-    {new_next_index, new_match_index} =
-      if rpc.success do
-        {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
-         Map.put(state.match_index, rpc.from, rpc.last_applied)}
-      else
-        {state.next_index, state.match_index}
-      end
-
-    {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
-  end
-
-  def handle_cast(%RPC.RequestVoteRequest{} = rpc, state) do
+  def handle_call(%RPC.RequestVoteRequest{} = rpc, _from, state) do
     Logger.info("#{inspect(state.id)}: Received request_vote_request")
 
     state =
@@ -125,14 +104,31 @@ defmodule Rafty.Server do
 
     new_voted_for = if vote_granted, do: rpc.from, else: state.voted_for
 
-    RPC.send_rpc(%RPC.RequestVoteResponse{
+    {:reply, %RPC.RequestVoteResponse{
       from: rpc.to,
       to: rpc.from,
       term_index: state.term_index,
       vote_granted: vote_granted
-    })
+    }, %{state | voted_for: new_voted_for} |> refresh_timer()}
+  end
 
-    {:noreply, %{state | voted_for: new_voted_for} |> refresh_timer()}
+  def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
+    Logger.info("#{inspect(state.id)}: Received append_entries_response")
+
+    state =
+      if rpc.term_index > state.term_index,
+        do: convert_to_follower(state, rpc.term_index),
+        else: state
+
+    {new_next_index, new_match_index} =
+      if rpc.success do
+        {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
+         Map.put(state.match_index, rpc.from, rpc.last_applied)}
+      else
+        {state.next_index, state.match_index}
+      end
+
+    {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
   end
 
   def handle_cast(%RPC.RequestVoteResponse{} = rpc, state) do

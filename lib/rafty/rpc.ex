@@ -1,4 +1,6 @@
 defmodule Rafty.RPC do
+  require Logger
+
   defmodule AppendEntriesRequest do
     @enforce_keys [
       :from,
@@ -57,6 +59,15 @@ defmodule Rafty.RPC do
   end
 
   def send_rpc(rpc) do
-    GenServer.cast(rpc.to, rpc)
+    Task.Supervisor.start_child(Rafty.RPC.Supervisor, fn -> send_rpc_impl(rpc) end)
+  end
+
+  def send_rpc_impl(rpc) do
+    GenServer.call(rpc.to, rpc)
+    |> case do
+      %AppendEntriesResponse{} = response -> GenServer.cast(rpc.from, response)
+      %RequestVoteResponse{} = response -> GenServer.cast(rpc.from, response)
+      response -> Logger.error("#{inspect(rpc)} yielded #{response}")
+    end
   end
 end
