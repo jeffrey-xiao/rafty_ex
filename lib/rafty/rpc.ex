@@ -42,13 +42,18 @@ defmodule Rafty.RPC do
   end
 
   def broadcast(rpc_type, rpc, neighbours) do
+    require Logger
+    IO.inspect(neighbours)
     neighbours
     |> Enum.each(fn neighbour ->
+      IO.puts("NEIGHBOUR IS #{inspect(neighbour)}")
       send_rpc(rpc_type, %{rpc | to: neighbour})
     end)
   end
 
   def send_rpc(rpc_type, rpc) do
+    require Logger
+    Logger.info("#{inspect(rpc.from)} sending to #{inspect(rpc.to)} message #{inspect(rpc)}")
     GenServer.cast(rpc.to, {rpc_type, rpc})
   end
 end

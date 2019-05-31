@@ -12,20 +12,20 @@ defmodule Rafty.Server do
   end
 
   def init({server_name, node_name, cluster_config}) do
-    Logger.info("#{server_name}:#{node_name}: Started")
-
+    Logger.info("#{inspect({server_name, node_name})}: Started")
+    :random.seed(:erlang.now())
     {:ok,
-     %State{server_name: server_name, node_name: node_name, cluster_config: cluster_config}
+     %State{id: {server_name, node_name}, cluster_config: cluster_config}
      |> convert_to_follower(0)
      |> refresh_timer()}
   end
 
   def handle_cast({:append_entries_request, rpc}, state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Received append_entries_request")
+    Logger.info("#{inspect(state.id)}: Received append_entries_request")
 
     state =
       if rpc.term_index >= state.term_index do
-        %{state | leader: rpc.from} |> convert_to_follower()
+        %{state | leader: rpc.from} |> convert_to_follower(rpc.term_index)
       else
         state
       end
@@ -47,17 +47,21 @@ defmodule Rafty.Server do
       end
 
     # TODO: This should change when we implement snapshotting and compaction.
-    {head, tail} = Enum.split(state.log, rpc.prev_log_index)
-    new_log = head ++ merge_logs(tail, rpc.entries)
+    {new_log, new_commit_index} =
+      if success do
+        # TODO: This should change when we implement snapshotting and compaction.
+        {head, tail} = Enum.split(state.log, rpc.prev_log_index)
+        {
+          head ++ merge_logs(tail, rpc.entries),
+          min(max(rpc.leader_commit_index, state.commit_index), length(state.log))
+        }
+      else
+        {state.log, state.commit_index}
+      end
 
-    # Adjust commit index.
-    # TODO: This should change when we implement snapshotting and compaction.
-    new_commit_index = min(max(rpc.leader_commit_index, state.commit_index), length(state.log))
-
-    state = {:noreply,
-     %{state | server_state: new_server_state, commit_index: new_commit_index}
+    state = %{state | commit_index: new_commit_index}
      |> advance_log()
-     |> refresh_timer()}
+     |> refresh_timer()
 
     RPC.send_rpc(:append_entries_response, %RPC.AppendEntriesResponse{
       from: rpc.to,
@@ -68,28 +72,28 @@ defmodule Rafty.Server do
       success: success
     })
 
-    state
+    {:noreply, state}
   end
 
   def handle_cast({:append_entries_response, rpc}, state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Received append_entries_response")
+    Logger.info("#{inspect(state.id)}: Received append_entries_response")
 
-    state = if rpc.term_index >= state.term_index, do: convert_to_follower(state), else: state
+    state = if rpc.term_index > state.term_index, do: convert_to_follower(state, rpc.term_index), else: state
 
     {new_next_index, new_match_index} =
       if rpc.success do
         {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1), Map.put(state.match_index, rpc.from, rpc.last_applied)}
       else
-        {state.next_index, state.new_match_index}
+        {state.next_index, state.match_index}
       end
 
-    {:noreply, %{state | next_index: new_next_index, new_match_index: new_match_index}}
+    {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
   end
 
   def handle_cast({:request_vote_request, rpc}, state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Received request_vote_request")
+    Logger.info("#{inspect(state.id)}: Received request_vote_request")
 
-    state = if rpc.term_index >= state.term_index, do: convert_to_follower(state), else: state
+    state = if rpc.term_index > state.term_index, do: convert_to_follower(state, rpc.term_index), else: state
 
     vote_granted =
       cond do
@@ -117,53 +121,53 @@ defmodule Rafty.Server do
   end
 
   def handle_cast({:request_vote_response, rpc}, state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Received request_vote_response")
-    state = if rpc.term_index >= state.term_index, do: convert_to_follower(state), else: state
+    Logger.info("#{inspect(state.id)}: Received request_vote_response")
+    state = if rpc.term_index > state.term_index, do: convert_to_follower(state, rpc.term_index), else: state
     state = if rpc.vote_granted, do: add_vote(state, rpc.from), else: state
     {:noreply, state |> refresh_timer()}
   end
 
   def handle_info({:election_time_out, timer_ref}, %{timer_state: {_timer, timer_ref}} = state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Received election_time_out")
+    Logger.info("#{inspect(state.id)}: Received election_time_out")
     {:noreply, state |> convert_to_candidate() |> refresh_timer()}
   end
 
   def handle_info({:election_time_out, _timer_ref}, state), do: {:noreply, state}
 
   def handle_info({:heartbeat_timer, timer_ref}, %{timer_state: {_timer, timer_ref}} = state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Received heartbeat_timer")
-
-    # TODO: Catch up other nodes.
-    RPC.broadcast(
-      :append_entries_request,
-      %RPC.AppendEntriesRequest{
-        from: state.server_name,
-        term_index: state.term_index,
-        entries: [],
-        prev_log_index: length(state.log),
-        prev_log_term_index: if(state.log == [], do: nil, else: tl(state.log).term_index)
-      },
-      neighbours(state)
-    )
-
+    Logger.info("#{inspect(state.id)}: Received heartbeat_timer")
+    broadcast_append_entries(state)
     {:noreply, state |> refresh_timer()}
   end
 
   defp broadcast_append_entries(state) do
-    nil
+    state
+    |> neighbours()
+    |> Enum.each(fn neighbour ->
+      {prev_log_index, prev_log_term_index, entries} = split_log(state.log, state.next_index[neighbour])
+        RPC.send_rpc(:append_entries_request, %RPC.AppendEntriesRequest{
+        from: state.id,
+        to: neighbour,
+        term_index: state.term_index,
+        prev_log_index: prev_log_index,
+        prev_log_term_index: prev_log_term_index,
+        entries: entries,
+        leader_commit_index: state.commit_index
+        }
+      )end)
   end
 
   defp add_vote(state, voter) do
     new_votes = MapSet.put(state.votes, voter)
 
-    Logger.info("#{state.server_name}:#{state.node_name} has #{MapSet.size(new_votes)} votes")
+    Logger.info("#{inspect(state.id)} has #{MapSet.size(new_votes)} votes")
     if (state.cluster_config |> length |> div(2)) + 1 <= MapSet.size(new_votes),
       do: state |> convert_to_leader(),
       else: %{state | votes: new_votes}
   end
 
   defp refresh_timer(state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Refreshing timer")
+    Logger.info("#{inspect(state.id)}: Refreshing timer")
 
     if state.timer_state != nil do
       {timer, _timer_ref} = state.timer_state
@@ -183,13 +187,13 @@ defmodule Rafty.Server do
   end
 
   defp convert_to_candidate(state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Converting to candidate")
+    Logger.info("#{inspect(state.id)}: Converting to candidate")
     new_term_index = state.term_index + 1
 
     RPC.broadcast(
       :request_vote_request,
       %RPC.RequestVoteRequest{
-        from: state.server_name,
+        from: state.id,
         term_index: new_term_index,
         # TODO: This should change when we implement snapshotting and compaction.
         last_log_index: length(state.log),
@@ -201,17 +205,17 @@ defmodule Rafty.Server do
     %{
       state
       | term_index: new_term_index,
-        voted_for: state.server_name,
+        voted_for: state.id,
         server_state: :candidate,
         next_index: %{},
         match_index: %{},
         votes: MapSet.new()
     }
-    |> add_vote(state.server_name)
+    |> add_vote(state.id)
   end
 
   defp convert_to_follower(state, new_term_index) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Converting to follower")
+    Logger.info("#{inspect(state.id)}: Converting to follower")
 
     %{
       state
@@ -225,7 +229,7 @@ defmodule Rafty.Server do
   end
 
   defp convert_to_leader(state) do
-    Logger.info("#{state.server_name}:#{state.node_name}: Converting to leader")
+    Logger.info("#{inspect(state.id)}: Converting to leader")
 
     %{
       state
@@ -233,14 +237,14 @@ defmodule Rafty.Server do
         server_state: :leader,
         next_index: %{},
         match_index: %{},
-        votes: %{}
+        votes: MapSet.new()
     }
   end
 
   defp advance_log(state) do
     if state.commit_index > state.last_applied do
       # TODO: Apply entries until commit index in FSM.
-      Logger.info("#{state.server_name}:#{state.node_name}: Applied #{state.last_applied+ 1} to #{state.commit_index}")
+      Logger.info("#{inspect(state.id)}: Applied #{state.last_applied+ 1} to #{state.commit_index}")
       %{state | last_applied: state.commit_index}
     else
       state
@@ -248,10 +252,13 @@ defmodule Rafty.Server do
   end
 
   defp neighbours(state) do
-    state.cluster_config |> Enum.reject(fn {server_name, _node_name} -> state.server_name == server_name end)
+    state.cluster_config |> Enum.reject(fn id ->
+      IO.puts("CHECKING #{inspect(id)} for #{inspect(state.id)}")
+      id == state.id end)
   end
 
   defp election_time_out() do
+    IO.inspect(:random.uniform(@election_time_out_high - @election_time_out_low + 1) - 1 + @election_time_out_low)
     :random.uniform(@election_time_out_high - @election_time_out_low + 1) - 1 + @election_time_out_low
   end
 
@@ -270,6 +277,6 @@ defmodule Rafty.Server do
   # TOOO: This should change when we implement snapshotting and compaction.
   defp split_log(log, index) do
     {head, tail} = Enum.split(log, index)
-    {length(head), if head == [], do: nil, else: tl(head).term_index, tail}
+    {length(head), (if head == [], do: nil, else: tl(head).term_index), tail}
   end
 end

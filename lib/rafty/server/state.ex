@@ -1,6 +1,5 @@
 defmodule Rafty.Server.State do
-  defstruct server_name: nil,
-            node_name: nil,
+  defstruct id: nil,
             server_state: :follower,
             timer_state: nil,
             cluster_config: [],
@@ -14,5 +13,5 @@ defmodule Rafty.Server.State do
             next_index: %{},
             match_index: %{},
             # Candidate specific state.
-            votes: %{}
+            votes: MapSet.new()
 end
