@@ -3,7 +3,7 @@ defmodule RaftyTest do
   doctest Rafty
 
   defmodule Stack do
-    @behavior Rafty.FSM
+    @behaviour Rafty.FSM
 
     @impl Rafty.FSM
     def init(), do: []
@@ -12,12 +12,15 @@ defmodule RaftyTest do
     def execute(state, {:push, val}), do: {:ok, [val] ++ state}
 
     @impl Rafty.FSM
-    def execute(state, {:pop, val}) do
+    def execute(state, :pop) do
       case state do
         [] -> {nil, state}
         [head | tail] -> {head, tail}
       end
     end
+
+    @impl Rafty.FSM
+    def query(state, :length), do: length(state)
   end
 
   setup do

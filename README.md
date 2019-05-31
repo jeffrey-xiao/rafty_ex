@@ -1,21 +1,21 @@
-# Rafty
+# rafty_ex
 
-**TODO: Add description**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Build Status](https://travis-ci.org/jeffrey-xiao/rafty_ex.svg?branch=master)](https://travis-ci.org/jeffrey-xiao/rafty_ex)
+[![codecov](https://codecov.io/gh/jeffrey-xiao/rafty_ex/branch/master/graph/badge.svg)](https://codecov.io/gh/jeffrey-xiao/rafty_ex)
 
-## Installation
+An implementation of the Raft consensus algorithm written in pure Elixir. For learning purposes only
+and not production use.
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `rafty` to your list of dependencies in `mix.exs`:
+## References
 
-```elixir
-def deps do
-  [
-    {:rafty, "~> 0.1.0"}
-  ]
-end
-```
+- In Search of an Understandable Consensus Algorithm
+  > Ongaro, Diego, and John Ousterhout. 2014. “In Search of an Understandable Consensus Algorithm.” In _2014 {Usenix} Annual Technical Conference ({Usenix}{ATC} 14)_, 305–19.
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/rafty](https://hexdocs.pm/rafty).
+## License
 
+`rafty_ex` is dual-licensed under the terms of either the MIT License or the Apache License (Version
+2.0).
+
+See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for more details.
