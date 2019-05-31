@@ -71,14 +71,15 @@ defmodule Rafty.Server do
       |> advance_log()
       |> refresh_timer()
 
-    {:reply, %RPC.AppendEntriesResponse{
-      from: rpc.to,
-      to: rpc.from,
-      term_index: state.term_index,
-      last_applied: state.last_applied,
-      last_log_index: length(state.log),
-      success: success
-    },state}
+    {:reply,
+     %RPC.AppendEntriesResponse{
+       from: rpc.to,
+       to: rpc.from,
+       term_index: state.term_index,
+       last_applied: state.last_applied,
+       last_log_index: length(state.log),
+       success: success
+     }, state}
   end
 
   def handle_call(%RPC.RequestVoteRequest{} = rpc, _from, state) do
@@ -104,12 +105,13 @@ defmodule Rafty.Server do
 
     new_voted_for = if vote_granted, do: rpc.from, else: state.voted_for
 
-    {:reply, %RPC.RequestVoteResponse{
-      from: rpc.to,
-      to: rpc.from,
-      term_index: state.term_index,
-      vote_granted: vote_granted
-    }, %{state | voted_for: new_voted_for} |> refresh_timer()}
+    {:reply,
+     %RPC.RequestVoteResponse{
+       from: rpc.to,
+       to: rpc.from,
+       term_index: state.term_index,
+       vote_granted: vote_granted
+     }, %{state | voted_for: new_voted_for} |> refresh_timer()}
   end
 
   def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
