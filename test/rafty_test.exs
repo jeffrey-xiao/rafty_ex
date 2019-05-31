@@ -8,9 +8,15 @@ defmodule RaftyTest do
   end
 
   test "sample" do
-    Rafty.ServersSupervisor.start_server(:a)
-    Rafty.ServersSupervisor.start_server(:b)
-    Rafty.ServersSupervisor.start_server(:c)
+    cluster_config = [
+      {:a, node()},
+      {:b, node()},
+      {:c, node()}
+    ]
+
+    Rafty.ServersSupervisor.start_server(:a, cluster_config)
+    Rafty.ServersSupervisor.start_server(:b, cluster_config)
+    Rafty.ServersSupervisor.start_server(:c, cluster_config)
     Process.sleep(5000)
   end
 end

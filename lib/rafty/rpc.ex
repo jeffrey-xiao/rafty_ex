@@ -16,6 +16,8 @@ defmodule Rafty.RPC do
       :from,
       :to,
       :term_index,
+      :last_applied,
+      :last_log_index,
       :success
     ]
   end
