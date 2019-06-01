@@ -22,7 +22,7 @@ defmodule Rafty.Server do
        fsm_module: fsm_module,
        fsm: fsm_module.init()
      }
-     |> convert_to_follower(0)
+     |> convert_to_follower(0, nil)
      |> reset_timers()}
   end
 
@@ -30,11 +30,9 @@ defmodule Rafty.Server do
     Logger.info("#{inspect(state.id)}: Received append_entries_request")
 
     state =
-      if rpc.term_index >= state.term_index and state.server_state != :follower do
-        %{state | leader: rpc.from} |> convert_to_follower(rpc.term_index)
-      else
-        state
-      end
+      if rpc.term_index >= state.term_index and state.server_state != :follower,
+        do: %{state | leader: rpc.from} |> convert_to_follower(rpc.term_index, rpc.from, nil),
+        else: state
 
     # TODO: Instead of returning a boolean for success, return the index of the first mismatch for
     # efficiency.
@@ -92,23 +90,32 @@ defmodule Rafty.Server do
 
     state =
       if rpc.term_index > state.term_index,
-        do: convert_to_follower(state, rpc.term_index),
+        do: convert_to_follower(state, rpc.term_index, nil),
         else: state
 
     vote_granted =
       cond do
         # Section 5.1: Server rejects all requests with stale term numbers.
-        rpc.term_index < state.term_index -> false
+        rpc.term_index < state.term_index ->
+          false
+
         # Candidate has already voted.
-        state.voted_for != nil and state.voted_for != rpc.from -> false
+        state.election_state.voted_for != nil and state.election_state.voted_for != rpc.from ->
+          false
+
         # Section 5.4.1: Candidate log must be be at least up-to-date as current log.
-        state.term_index > rpc.last_log_term_index -> false
+        state.term_index > rpc.last_log_term_index ->
+          false
+
         # TODO: This should change when we implement snapshotting and compaction.
-        length(state.log) > rpc.last_log_index -> false
-        true -> true
+        length(state.log) > rpc.last_log_index ->
+          false
+
+        true ->
+          true
       end
 
-    new_voted_for = if vote_granted, do: rpc.from, else: state.voted_for
+    new_voted_for = if vote_granted, do: rpc.from, else: state.election_state.voted_for
 
     {:reply,
      %RPC.RequestVoteResponse{
@@ -116,7 +123,7 @@ defmodule Rafty.Server do
        to: rpc.from,
        term_index: state.term_index,
        vote_granted: vote_granted
-     }, %{state | voted_for: new_voted_for} |> reset_timers()}
+     }, put_in(state.election_state.voted_for, new_voted_for) |> reset_timers()}
   end
 
   def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
@@ -124,16 +131,15 @@ defmodule Rafty.Server do
 
     state =
       if rpc.term_index > state.term_index,
-        do: convert_to_follower(state, rpc.term_index),
+        do: convert_to_follower(state, rpc.term_index, nil),
         else: state
 
     {new_next_index, new_match_index} =
-      if rpc.success do
-        {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
-         Map.put(state.match_index, rpc.from, rpc.last_applied)}
-      else
-        {state.next_index, state.match_index}
-      end
+      if rpc.success,
+        do:
+          {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
+           Map.put(state.match_index, rpc.from, rpc.last_applied)},
+        else: {state.next_index, state.match_index}
 
     {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
   end
@@ -143,7 +149,7 @@ defmodule Rafty.Server do
 
     state =
       if rpc.term_index > state.term_index,
-        do: convert_to_follower(state, rpc.term_index),
+        do: convert_to_follower(state, rpc.term_index, nil),
         else: state
 
     state = if rpc.vote_granted, do: add_vote(state, rpc.from), else: state
@@ -229,24 +235,26 @@ defmodule Rafty.Server do
 
     %{
       state
-      | term_index: new_term_index,
-        voted_for: state.id,
-        server_state: :candidate,
+      | server_state: :candidate,
+        term_index: new_term_index,
+        leader: nil,
         next_index: %{},
         match_index: %{},
-        election_state: %ElectionState{}
+        election_state: %ElectionState{
+          voted_for: state.id
+        }
     }
     |> add_vote(state.id)
   end
 
-  defp convert_to_follower(state, new_term_index) do
+  defp convert_to_follower(state, new_term_index, new_leader) do
     Logger.info("#{inspect(state.id)}: Converting to follower")
 
     %{
       state
-      | term_index: new_term_index,
-        voted_for: nil,
-        server_state: :follower,
+      | server_state: :follower,
+        term_index: new_term_index,
+        leader: new_leader,
         next_index: %{},
         match_index: %{},
         election_state: %ElectionState{}
@@ -258,8 +266,8 @@ defmodule Rafty.Server do
 
     %{
       state
-      | voted_for: nil,
-        server_state: :leader,
+      | server_state: :leader,
+        leader: state.id,
         next_index: %{},
         match_index: %{},
         election_state: %ElectionState{}

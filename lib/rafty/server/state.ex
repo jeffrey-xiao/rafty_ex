@@ -3,14 +3,13 @@ defmodule Rafty.Server.State do
 
   defstruct id: nil,
             server_state: :follower,
-            timer_state: nil,
             cluster_config: [],
             term_index: 0,
-            voted_for: nil,
             leader: nil,
             log: [],
             commit_index: 0,
             last_applied: 0,
+            # Finite state machine specific state.
             fsm_module: nil,
             fsm: nil,
             # Leader specific state.
