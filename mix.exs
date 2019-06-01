@@ -1,14 +1,14 @@
 defmodule Rafty.MixProject do
   use Mix.Project
 
-  @gitlab_url "https://gitlab.com/jeffrey-xiao/rafty_ex"
   @github_url "https://github.com/jeffrey-xiao/rafty_ex"
+  @gitlab_url "https://gitlab.com/jeffrey-xiao/rafty_ex"
 
   def project() do
     [
       app: :rafty,
-      version: "0.1.0",
       name: "rafty",
+      version: "0.1.0",
       description: "An implementation of the Raft consensus algorithm.",
       elixir: "~> 1.8",
       start_permanent: Mix.env() == :prod,
