@@ -11,6 +11,10 @@ defmodule Rafty.Server do
     GenServer.start_link(__MODULE__, args, name: server_name)
   end
 
+  def name(server_name) do
+    :"Server_#{server_name}"
+  end
+
   def init({server_name, node_name, cluster_config, fsm_module}) do
     Logger.info("#{inspect({server_name, node_name})}: Started")
     :random.seed(:erlang.now())
@@ -26,16 +30,33 @@ defmodule Rafty.Server do
      |> reset_timers()}
   end
 
+  def handle_call(:execute, from, state) do
+    {:reply, nil, state}
+  end
+
+  def handle_call(:query, from, state) do
+    {:reply, nil, state}
+  end
+
+  def handle_call(:status, _from, state) do
+    {:reply, {state.server_state, state.term_index, state.commit_index, state.last_applied}, state}
+  end
+
+  # TODO: Have a queue of clients waiting to hear from leaders.
+  def handle_call(:leader, _from, state) do
+    {:reply, state.leader, state}
+  end
+
   def handle_call(%RPC.AppendEntriesRequest{} = rpc, _from, state) do
     Logger.info("#{inspect(state.id)}: Received append_entries_request")
 
     state =
       if rpc.term_index >= state.term_index and state.server_state != :follower,
-        do: %{state | leader: rpc.from} |> convert_to_follower(rpc.term_index, rpc.from, nil),
+        do: %{state | leader: rpc.from} |> convert_to_follower(rpc.term_index, rpc.from),
         else: state
 
-    # TODO: Instead of returning a boolean for success, return the index of the first mismatch for
-    # efficiency.
+    # TODO: Instead of returning a boolean for success, return the index of the log entry with the
+    # same term index as the mismatch for efficiency.
     success =
       cond do
         # Section 5.1: Server rejects all rejects with stale term numbers.
@@ -100,7 +121,7 @@ defmodule Rafty.Server do
           false
 
         # Candidate has already voted.
-        state.election_state.voted_for != nil and state.election_state.voted_for != rpc.from ->
+        state.voted_for != nil and state.voted_for != rpc.from ->
           false
 
         # Section 5.4.1: Candidate log must be be at least up-to-date as current log.
@@ -115,7 +136,7 @@ defmodule Rafty.Server do
           true
       end
 
-    new_voted_for = if vote_granted, do: rpc.from, else: state.election_state.voted_for
+    new_voted_for = if vote_granted, do: rpc.from, else: state.voted_for
 
     {:reply,
      %RPC.RequestVoteResponse{
@@ -123,7 +144,7 @@ defmodule Rafty.Server do
        to: rpc.from,
        term_index: state.term_index,
        vote_granted: vote_granted
-     }, put_in(state.election_state.voted_for, new_voted_for) |> reset_timers()}
+     }, put_in(state.voted_for, new_voted_for) |> reset_timers()}
   end
 
   def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
@@ -139,7 +160,7 @@ defmodule Rafty.Server do
         do:
           {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
            Map.put(state.match_index, rpc.from, rpc.last_applied)},
-        else: {state.next_index, state.match_index}
+        else: {Map.update!(state.next_index, rpc.from, fn next_index -> next_index - 1 end), state.match_index}
 
     {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
   end
@@ -156,7 +177,7 @@ defmodule Rafty.Server do
     {:noreply, state |> reset_timers()}
   end
 
-  def handle_info({:election_timeout, ref}, %{election_state: %{timer: %{ref: ref}}} = state) do
+  def handle_info({:election_timeout, ref}, %{election_timer: %{ref: ref}} = state) do
     Logger.info("#{inspect(state.id)}: Received election_timeout")
     {:noreply, state |> convert_to_candidate() |> reset_timers()}
   end
@@ -191,9 +212,9 @@ defmodule Rafty.Server do
   end
 
   defp add_vote(state, voter) do
-    state = put_in(state.election_state.votes, MapSet.put(state.election_state.votes, voter))
+    state = put_in(state.votes, MapSet.put(state.votes, voter))
 
-    if (state.cluster_config |> length |> div(2)) + 1 <= MapSet.size(state.election_state.votes),
+    if (state.cluster_config |> length |> div(2)) + 1 <= MapSet.size(state.votes),
       do: state |> convert_to_leader(),
       else: state
   end
@@ -205,8 +226,8 @@ defmodule Rafty.Server do
     if state.server_state == :candidate or state.server_state == :follower do
       state =
         put_in(
-          state.election_state.timer,
-          Timer.reset(state.election_state.timer, election_timeout())
+          state.election_timer,
+          Timer.reset(state.election_timer, election_timeout())
         )
 
       put_in(state.heartbeat_timer, Timer.stop(state.heartbeat_timer))
@@ -214,7 +235,7 @@ defmodule Rafty.Server do
       state =
         put_in(state.heartbeat_timer, Timer.reset(state.heartbeat_timer, @heartbeat_timeout))
 
-      put_in(state.election_state.timer, Timer.stop(state.election_state.timer))
+      put_in(state.election_timer, Timer.stop(state.election_timer))
     end
   end
 
@@ -222,13 +243,18 @@ defmodule Rafty.Server do
     Logger.info("#{inspect(state.id)}: Converting to candidate")
     new_term_index = state.term_index + 1
 
+    # TODO: This should change when we implement snapshotting and compaction.
+    {last_log_index, last_log_term_index} =
+      if state.log == [],
+        do: {0, nil},
+        else: {length(state.log), tl(state.log).term_index}
+
     RPC.broadcast(
       %RPC.RequestVoteRequest{
         from: state.id,
         term_index: new_term_index,
-        # TODO: This should change when we implement snapshotting and compaction.
-        last_log_index: length(state.log),
-        last_log_term_index: nil
+        last_log_index: last_log_index,
+        last_log_term_index: last_log_term_index
       },
       neighbours(state)
     )
@@ -238,11 +264,9 @@ defmodule Rafty.Server do
       | server_state: :candidate,
         term_index: new_term_index,
         leader: nil,
-        next_index: %{},
-        match_index: %{},
-        election_state: %ElectionState{
-          voted_for: state.id
-        }
+        next_index: nil,
+        match_index: nil,
+        voted_for: state.id,
     }
     |> add_vote(state.id)
   end
@@ -255,22 +279,23 @@ defmodule Rafty.Server do
       | server_state: :follower,
         term_index: new_term_index,
         leader: new_leader,
-        next_index: %{},
-        match_index: %{},
-        election_state: %ElectionState{}
+        next_index: nil,
+        match_index: nil,
+      voted_for: nil,
     }
   end
 
   defp convert_to_leader(state) do
     Logger.info("#{inspect(state.id)}: Converting to leader")
 
+    log_length = length(state.log)
     %{
       state
       | server_state: :leader,
         leader: state.id,
-        next_index: %{},
-        match_index: %{},
-        election_state: %ElectionState{}
+      next_index: state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
+      match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
+          voted_for: nil,
     }
   end
 
@@ -290,7 +315,7 @@ defmodule Rafty.Server do
         "#{inspect(state.id)}: Applied #{state.last_applied + 1} to #{state.commit_index}"
       )
 
-      %{state | last_applied: state.commit_index}
+      %{state | last_applied: state.commit_index, fsm: new_fsm}
     else
       state
     end

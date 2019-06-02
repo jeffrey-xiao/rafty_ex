@@ -17,5 +17,7 @@ defmodule Rafty.Server.State do
             match_index: %{},
             heartbeat_timer: Timer.new(:heartbeat_timeout),
             # Election specific state.
-            election_state: %ElectionState{}
+            votes: MapSet.new(),
+            election_timer: Timer.new(:election_timeout),
+            voted_for: nil
 end

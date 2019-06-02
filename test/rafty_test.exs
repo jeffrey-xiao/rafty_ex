@@ -28,16 +28,16 @@ defmodule RaftyTest do
     :ok = Application.start(:rafty)
   end
 
-  test "sample" do
+  test "simple" do
     cluster_config = [
       {:a, node()},
       {:b, node()},
       {:c, node()}
     ]
 
-    Rafty.ServersSupervisor.start_server(:a, cluster_config, Stack)
-    Rafty.ServersSupervisor.start_server(:b, cluster_config, Stack)
-    Rafty.ServersSupervisor.start_server(:c, cluster_config, Stack)
+    Rafty.start_server(:a, cluster_config, Stack)
+    Rafty.start_server(:b, cluster_config, Stack)
+    Rafty.start_server(:c, cluster_config, Stack)
     Process.sleep(5000)
   end
 end
