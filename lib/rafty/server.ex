@@ -11,10 +11,6 @@ defmodule Rafty.Server do
     GenServer.start_link(__MODULE__, args, name: server_name)
   end
 
-  def name(server_name) do
-    :"Server_#{server_name}"
-  end
-
   def init({server_name, node_name, cluster_config, fsm_module}) do
     Logger.info("#{inspect({server_name, node_name})}: Started")
     :random.seed(:erlang.now())
@@ -185,7 +181,8 @@ defmodule Rafty.Server do
     {:noreply, state |> reset_election_timer()}
   end
 
-  def handle_info({:election_timeout, _ref}, %{server_state: :leader} = state), do: {:noreply, state}
+  def handle_info({:election_timeout, _ref}, %{server_state: :leader} = state),
+    do: {:noreply, state}
 
   def handle_info({:election_timeout, ref}, %{election_timer: %{ref: ref}} = state) do
     Logger.info("#{inspect(state.id)}: Received election_timeout")
@@ -315,7 +312,8 @@ defmodule Rafty.Server do
         match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
         votes: MapSet.new(),
         voted_for: nil
-    } |> reset_heartbeat_timer()
+    }
+    |> reset_heartbeat_timer()
   end
 
   defp advance_log(state) do
