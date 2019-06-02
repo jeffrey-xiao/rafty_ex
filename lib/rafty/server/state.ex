@@ -19,5 +19,7 @@ defmodule Rafty.Server.State do
             # Election specific state.
             votes: MapSet.new(),
             election_timer: Timer.new(:election_timeout),
-            voted_for: nil
+            voted_for: nil,
+            # Client requests
+            leader_requests: []
 end

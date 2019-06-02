@@ -11,6 +11,7 @@ defmodule Rafty.MixProject do
       version: "0.1.0",
       description: "An implementation of the Raft consensus algorithm.",
       elixir: "~> 1.8",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
@@ -32,6 +33,13 @@ defmodule Rafty.MixProject do
       mod: {Rafty, []},
       extra_applications: [:logger]
     ]
+  end
+
+  defp elixirc_paths(env) do
+    case env do
+      :test -> ["lib", "test/rafty_test/util"]
+      _ -> ["lib"]
+    end
   end
 
   defp deps() do

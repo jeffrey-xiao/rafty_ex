@@ -28,7 +28,7 @@ defmodule Rafty do
   end
 
   def leader(server_name, timeout \\ 5000) do
-    catch_exit(fn -> GenServer.call(server_name, :status, timeout) end)
+    catch_exit(fn -> GenServer.call(server_name, :leader, timeout) end)
   end
 
   def catch_exit(func) do

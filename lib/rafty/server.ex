@@ -1,7 +1,7 @@
 defmodule Rafty.Server do
   require Logger
   use GenServer
-  alias Rafty.{Server.State, Server.ElectionState, RPC, Timer}
+  alias Rafty.{Server.State, RPC, Timer}
 
   @election_timeout_low 250
   @election_timeout_high 500
@@ -26,8 +26,8 @@ defmodule Rafty.Server do
        fsm_module: fsm_module,
        fsm: fsm_module.init()
      }
-     |> convert_to_follower(0, nil)
-     |> reset_timers()}
+     |> convert_to_follower(0)
+     |> reset_election_timer()}
   end
 
   def handle_call(:execute, from, state) do
@@ -44,17 +44,22 @@ defmodule Rafty.Server do
   end
 
   # TODO: Have a queue of clients waiting to hear from leaders.
-  def handle_call(:leader, _from, state) do
-    {:reply, state.leader, state}
+  def handle_call(:leader, from, state) do
+    if state.leader != nil,
+      do: {:reply, state.leader, state},
+      else: {:noreply, %{state | leader_requests: [from | state.leader_requests]}}
   end
 
   def handle_call(%RPC.AppendEntriesRequest{} = rpc, _from, state) do
     Logger.info("#{inspect(state.id)}: Received append_entries_request")
 
     state =
-      if rpc.term_index >= state.term_index and state.server_state != :follower,
-        do: %{state | leader: rpc.from} |> convert_to_follower(rpc.term_index, rpc.from),
-        else: state
+      if rpc.term_index >= state.term_index do
+        Enum.each(state.leader_requests, fn client -> GenServer.reply(client, rpc.from) end)
+        %{state | leader: rpc.from, leader_requests: []} |> convert_to_follower(rpc.term_index)
+      else
+        state
+      end
 
     # TODO: Instead of returning a boolean for success, return the index of the log entry with the
     # same term index as the mismatch for efficiency.
@@ -84,7 +89,7 @@ defmodule Rafty.Server do
         {head, tail} = Enum.split(state.log, rpc.prev_log_index)
 
         {
-          head ++ merge_logs(tail, rpc.entries),
+          [head | merge_logs(tail, rpc.entries)],
           min(max(rpc.leader_commit_index, state.commit_index), length(state.log))
         }
       else
@@ -94,7 +99,7 @@ defmodule Rafty.Server do
     state =
       %{state | log: new_log, commit_index: new_commit_index}
       |> advance_log()
-      |> reset_timers()
+      |> reset_election_timer()
 
     {:reply,
      %RPC.AppendEntriesResponse{
@@ -112,7 +117,7 @@ defmodule Rafty.Server do
 
     state =
       if rpc.term_index > state.term_index,
-        do: convert_to_follower(state, rpc.term_index, nil),
+        do: convert_to_follower(state, rpc.term_index),
         else: state
 
     vote_granted =
@@ -145,7 +150,7 @@ defmodule Rafty.Server do
        to: rpc.from,
        term_index: state.term_index,
        vote_granted: vote_granted
-     }, put_in(state.voted_for, new_voted_for) |> reset_timers()}
+     }, put_in(state.voted_for, new_voted_for) |> reset_election_timer()}
   end
 
   def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
@@ -153,7 +158,7 @@ defmodule Rafty.Server do
 
     state =
       if rpc.term_index > state.term_index,
-        do: convert_to_follower(state, rpc.term_index, nil),
+        do: convert_to_follower(state, rpc.term_index),
         else: state
 
     {new_next_index, new_match_index} =
@@ -173,24 +178,30 @@ defmodule Rafty.Server do
 
     state =
       if rpc.term_index > state.term_index,
-        do: convert_to_follower(state, rpc.term_index, nil),
+        do: convert_to_follower(state, rpc.term_index),
         else: state
 
     state = if rpc.vote_granted, do: add_vote(state, rpc.from), else: state
-    {:noreply, state |> reset_timers()}
+    {:noreply, state |> reset_election_timer()}
   end
+
+  def handle_info({:election_timeout, _ref}, %{server_state: :leader} = state), do: {:noreply, state}
 
   def handle_info({:election_timeout, ref}, %{election_timer: %{ref: ref}} = state) do
     Logger.info("#{inspect(state.id)}: Received election_timeout")
-    {:noreply, state |> convert_to_candidate() |> reset_timers()}
+    {:noreply, state |> convert_to_candidate() |> reset_election_timer()}
   end
 
   def handle_info({:election_timeout, _ref}, state), do: {:noreply, state}
 
-  def handle_info({:heartbeat_timeout, ref}, %{heartbeat_timer: %{ref: ref}} = state) do
+  # TODO: Dispose of leader if it cannot maintain quorum.
+  def handle_info(
+        {:heartbeat_timeout, ref},
+        %{heartbeat_timer: %{ref: ref}, server_state: :leader} = state
+      ) do
     Logger.info("#{inspect(state.id)}: Received heartbeat_timer")
     broadcast_append_entries(state)
-    {:noreply, state |> reset_timers()}
+    {:noreply, state |> reset_heartbeat_timer()}
   end
 
   def handle_info({:heartbeat_timeout, _ref}, state), do: {:noreply, state}
@@ -214,7 +225,7 @@ defmodule Rafty.Server do
     end)
   end
 
-  defp add_vote(state, voter) do
+  defp add_vote(%{server_state: :candidate} = state, voter) do
     state = put_in(state.votes, MapSet.put(state.votes, voter))
 
     if (state.cluster_config |> length |> div(2)) + 1 <= MapSet.size(state.votes),
@@ -222,25 +233,26 @@ defmodule Rafty.Server do
       else: state
   end
 
-  # TODO: Leader could be disposed if it cannot maintain a quorum.
-  defp reset_timers(state) do
-    Logger.info("#{inspect(state.id)}: Refreshing timers")
+  defp add_vote(%{server_state: _server_state} = state, voter), do: state
 
-    if state.server_state == :candidate or state.server_state == :follower do
-      state =
-        put_in(
-          state.election_timer,
-          Timer.reset(state.election_timer, election_timeout())
-        )
+  defp reset_election_timer(%{server_state: :leader} = state), do: state
 
-      put_in(state.heartbeat_timer, Timer.stop(state.heartbeat_timer))
-    else
-      state =
-        put_in(state.heartbeat_timer, Timer.reset(state.heartbeat_timer, @heartbeat_timeout))
+  defp reset_election_timer(%{server_state: _server_state} = state) do
+    Logger.info("#{inspect(state.id)}: Refreshing election timer")
 
-      put_in(state.election_timer, Timer.stop(state.election_timer))
-    end
+    put_in(
+      state.election_timer,
+      Timer.reset(state.election_timer, election_timeout())
+    )
   end
+
+  # TODO: Leader could be disposed if it cannot maintain a quorum.
+  defp reset_heartbeat_timer(%{server_state: :leader} = state) do
+    Logger.info("#{inspect(state.id)}: Refreshing heartbeat timer")
+    put_in(state.heartbeat_timer, Timer.reset(state.heartbeat_timer, @heartbeat_timeout))
+  end
+
+  defp reset_heartbeat_timer(%{server_state: _server_state} = state), do: state
 
   defp convert_to_candidate(state) do
     Logger.info("#{inspect(state.id)}: Converting to candidate")
@@ -269,21 +281,22 @@ defmodule Rafty.Server do
         leader: nil,
         next_index: nil,
         match_index: nil,
+        votes: MapSet.new(),
         voted_for: state.id
     }
     |> add_vote(state.id)
   end
 
-  defp convert_to_follower(state, new_term_index, new_leader) do
+  defp convert_to_follower(state, new_term_index) do
     Logger.info("#{inspect(state.id)}: Converting to follower")
 
     %{
       state
       | server_state: :follower,
         term_index: new_term_index,
-        leader: new_leader,
         next_index: nil,
         match_index: nil,
+        votes: MapSet.new(),
         voted_for: nil
     }
   end
@@ -300,8 +313,9 @@ defmodule Rafty.Server do
         next_index:
           state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
         match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
+        votes: MapSet.new(),
         voted_for: nil
-    }
+    } |> reset_heartbeat_timer()
   end
 
   defp advance_log(state) do
@@ -343,7 +357,7 @@ defmodule Rafty.Server do
     if old_head.term_index != new_head.term_index do
       tail
     else
-      old_head ++ merge_logs(old_tail, new_tail)
+      [old_head | merge_logs(old_tail, new_tail)]
     end
   end
 
