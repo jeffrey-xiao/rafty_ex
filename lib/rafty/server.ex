@@ -39,7 +39,8 @@ defmodule Rafty.Server do
   end
 
   def handle_call(:status, _from, state) do
-    {:reply, {state.server_state, state.term_index, state.commit_index, state.last_applied}, state}
+    {:reply, {state.server_state, state.term_index, state.commit_index, state.last_applied},
+     state}
   end
 
   # TODO: Have a queue of clients waiting to hear from leaders.
@@ -160,7 +161,9 @@ defmodule Rafty.Server do
         do:
           {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
            Map.put(state.match_index, rpc.from, rpc.last_applied)},
-        else: {Map.update!(state.next_index, rpc.from, fn next_index -> next_index - 1 end), state.match_index}
+        else:
+          {Map.update!(state.next_index, rpc.from, fn next_index -> next_index - 1 end),
+           state.match_index}
 
     {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
   end
@@ -266,7 +269,7 @@ defmodule Rafty.Server do
         leader: nil,
         next_index: nil,
         match_index: nil,
-        voted_for: state.id,
+        voted_for: state.id
     }
     |> add_vote(state.id)
   end
@@ -281,7 +284,7 @@ defmodule Rafty.Server do
         leader: new_leader,
         next_index: nil,
         match_index: nil,
-      voted_for: nil,
+        voted_for: nil
     }
   end
 
@@ -289,13 +292,15 @@ defmodule Rafty.Server do
     Logger.info("#{inspect(state.id)}: Converting to leader")
 
     log_length = length(state.log)
+
     %{
       state
       | server_state: :leader,
         leader: state.id,
-      next_index: state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
-      match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
-          voted_for: nil,
+        next_index:
+          state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
+        match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
+        voted_for: nil
     }
   end
 
