@@ -251,10 +251,11 @@ defmodule Rafty.Server do
   defp reset_election_timer(state) do
     Logger.info("#{inspect(state.id)}: Refreshing election timer")
 
-    state = put_in(
-      state.election_timer,
-      Timer.reset(state.election_timer, election_timeout())
-    )
+    state =
+      put_in(
+        state.election_timer,
+        Timer.reset(state.election_timer, election_timeout())
+      )
   end
 
   # TODO: Leader could be disposed if it cannot maintain a quorum.

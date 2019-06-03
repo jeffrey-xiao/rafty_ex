@@ -7,7 +7,7 @@ defmodule Rafty.Log.InMemoryStore do
   defstruct [
     :current_term_index,
     :voted_for,
-    :entries,
+    :entries
   ]
 
   @impl Store
@@ -15,7 +15,7 @@ defmodule Rafty.Log.InMemoryStore do
     %__MODULE__{
       current_term_index: 0,
       voted_for: nil,
-      entries: [],
+      entries: []
     }
   end
 

@@ -3,7 +3,7 @@ defmodule Rafty.Log.Server do
 
   defstruct [
     :log,
-    :log_state,
+    :log_state
   ]
 
   def start_link({server_name, _log_module} = args) do

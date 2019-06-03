@@ -44,7 +44,7 @@ defmodule Rafty.RPC do
       :from,
       :term_index,
       :last_log_index,
-      :last_log_term_index,
+      :last_log_term_index
     ]
     defstruct [
       :from,
@@ -59,7 +59,7 @@ defmodule Rafty.RPC do
     @enforce_keys [
       :from,
       :term_index,
-      :vote_granted,
+      :vote_granted
     ]
     defstruct [
       :from,
