@@ -22,6 +22,13 @@ defmodule Rafty.RPC do
   end
 
   defmodule AppendEntriesResponse do
+    @enforce_keys [
+      :from,
+      :term_index,
+      :last_applied,
+      :last_log_index,
+      :success
+    ]
     defstruct [
       :from,
       :to,
@@ -33,6 +40,12 @@ defmodule Rafty.RPC do
   end
 
   defmodule RequestVoteRequest do
+    @enforce_keys [
+      :from,
+      :term_index,
+      :last_log_index,
+      :last_log_term_index,
+    ]
     defstruct [
       :from,
       :to,
@@ -43,6 +56,11 @@ defmodule Rafty.RPC do
   end
 
   defmodule RequestVoteResponse do
+    @enforce_keys [
+      :from,
+      :term_index,
+      :vote_granted,
+    ]
     defstruct [
       :from,
       :to,
@@ -63,7 +81,8 @@ defmodule Rafty.RPC do
   end
 
   def send_rpc_impl(rpc) do
-    GenServer.call(rpc.to, rpc)
+    rpc.to
+    |> GenServer.call(rpc)
     |> case do
       %AppendEntriesResponse{} = response -> GenServer.cast(rpc.from, response)
       %RequestVoteResponse{} = response -> GenServer.cast(rpc.from, response)

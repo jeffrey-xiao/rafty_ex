@@ -1,17 +1,18 @@
 defmodule Rafty.Server do
   require Logger
   use GenServer
-  alias Rafty.{Server.State, RPC, Timer}
+  alias Rafty.{RPC, Server.State, Timer}
 
   @election_timeout_low 250
   @election_timeout_high 500
   @heartbeat_timeout 100
 
-  def start_link({server_name, _node_name, _cluster_config, _fsm_module} = args) do
+  def start_link({server_name, _node_name, _cluster_config, _fsm_module, _log_module} = args) do
     GenServer.start_link(__MODULE__, args, name: server_name)
   end
 
-  def init({server_name, node_name, cluster_config, fsm_module}) do
+  @impl GenServer
+  def init({server_name, node_name, cluster_config, fsm_module, log_module}) do
     Logger.info("#{inspect({server_name, node_name})}: Started")
     :random.seed(:erlang.now())
 
@@ -26,26 +27,31 @@ defmodule Rafty.Server do
      |> reset_election_timer()}
   end
 
+  @impl GenServer
   def handle_call(:execute, from, state) do
     {:reply, nil, state}
   end
 
+  @impl GenServer
   def handle_call(:query, from, state) do
     {:reply, nil, state}
   end
 
+  @impl GenServer
   def handle_call(:status, _from, state) do
     {:reply, {state.server_state, state.term_index, state.commit_index, state.last_applied},
      state}
   end
 
   # TODO: Have a queue of clients waiting to hear from leaders.
+  @impl GenServer
   def handle_call(:leader, from, state) do
     if state.leader != nil,
       do: {:reply, state.leader, state},
       else: {:noreply, %{state | leader_requests: [from | state.leader_requests]}}
   end
 
+  @impl GenServer
   def handle_call(%RPC.AppendEntriesRequest{} = rpc, _from, state) do
     Logger.info("#{inspect(state.id)}: Received append_entries_request")
 
@@ -108,6 +114,7 @@ defmodule Rafty.Server do
      }, state}
   end
 
+  @impl GenServer
   def handle_call(%RPC.RequestVoteRequest{} = rpc, _from, state) do
     Logger.info("#{inspect(state.id)}: Received request_vote_request")
 
@@ -146,9 +153,10 @@ defmodule Rafty.Server do
        to: rpc.from,
        term_index: state.term_index,
        vote_granted: vote_granted
-     }, put_in(state.voted_for, new_voted_for) |> reset_election_timer()}
+     }, state.voted_for |> put_in(new_voted_for) |> reset_election_timer()}
   end
 
+  @impl GenServer
   def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
     Logger.info("#{inspect(state.id)}: Received append_entries_response")
 
@@ -169,6 +177,7 @@ defmodule Rafty.Server do
     {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
   end
 
+  @impl GenServer
   def handle_cast(%RPC.RequestVoteResponse{} = rpc, state) do
     Logger.info("#{inspect(state.id)}: Received request_vote_response")
 
@@ -181,17 +190,21 @@ defmodule Rafty.Server do
     {:noreply, state |> reset_election_timer()}
   end
 
+  @impl GenServer
   def handle_info({:election_timeout, _ref}, %{server_state: :leader} = state),
     do: {:noreply, state}
 
+  @impl GenServer
   def handle_info({:election_timeout, ref}, %{election_timer: %{ref: ref}} = state) do
     Logger.info("#{inspect(state.id)}: Received election_timeout")
     {:noreply, state |> convert_to_candidate() |> reset_election_timer()}
   end
 
+  @impl GenServer
   def handle_info({:election_timeout, _ref}, state), do: {:noreply, state}
 
   # TODO: Dispose of leader if it cannot maintain quorum.
+  @impl GenServer
   def handle_info(
         {:heartbeat_timeout, ref},
         %{heartbeat_timer: %{ref: ref}, server_state: :leader} = state
@@ -201,6 +214,7 @@ defmodule Rafty.Server do
     {:noreply, state |> reset_heartbeat_timer()}
   end
 
+  @impl GenServer
   def handle_info({:heartbeat_timeout, _ref}, state), do: {:noreply, state}
 
   defp broadcast_append_entries(state) do
@@ -230,14 +244,14 @@ defmodule Rafty.Server do
       else: state
   end
 
-  defp add_vote(%{server_state: _server_state} = state, voter), do: state
+  defp add_vote(state, voter), do: state
 
   defp reset_election_timer(%{server_state: :leader} = state), do: state
 
-  defp reset_election_timer(%{server_state: _server_state} = state) do
+  defp reset_election_timer(state) do
     Logger.info("#{inspect(state.id)}: Refreshing election timer")
 
-    put_in(
+    state = put_in(
       state.election_timer,
       Timer.reset(state.election_timer, election_timeout())
     )
@@ -249,7 +263,7 @@ defmodule Rafty.Server do
     put_in(state.heartbeat_timer, Timer.reset(state.heartbeat_timer, @heartbeat_timeout))
   end
 
-  defp reset_heartbeat_timer(%{server_state: _server_state} = state), do: state
+  defp reset_heartbeat_timer(state), do: state
 
   defp convert_to_candidate(state) do
     Logger.info("#{inspect(state.id)}: Converting to candidate")
@@ -324,8 +338,8 @@ defmodule Rafty.Server do
       new_fsm =
         tail
         |> Enum.take(entry_count)
-        |> Enum.reduce(state.fsm, fn entry ->
-          state.fsm_module.execute(state.fsm, entry.command)
+        |> Enum.reduce(state.fsm, fn acc, entry ->
+          state.fsm_module.execute(acc, entry.command)
         end)
 
       Logger.info(
@@ -342,7 +356,7 @@ defmodule Rafty.Server do
     state.cluster_config |> Enum.reject(fn id -> id == state.id end)
   end
 
-  defp election_timeout() do
+  defp election_timeout do
     :random.uniform(@election_timeout_high - @election_timeout_low + 1) - 1 +
       @election_timeout_low
   end

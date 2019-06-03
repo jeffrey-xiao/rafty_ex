@@ -1,7 +1,7 @@
 defmodule Rafty.Server.Supervisor do
   use Supervisor
 
-  def start_link({server_name, _node_name, _cluster_config, _fsm_module} = args) do
+  def start_link({server_name, _node_name, _cluster_config, _fsm_module, _log_module} = args) do
     Supervisor.start_link(__MODULE__, args, name: name(server_name))
   end
 
@@ -9,10 +9,11 @@ defmodule Rafty.Server.Supervisor do
     :"ServerSupervisor#{server_name}"
   end
 
-  def init(args) do
+  @impl Supervisor
+  def init({server_name, _node_name, _cluster_config, _fsm_module, log_module} = args) do
     children = [
-      {Rafty.Server, args}
-      # TODO: Add log GenServer
+      {Rafty.Server, args},
+      {Rafty.Log.Server, {server_name, log_module}}
     ]
 
     opts = [strategy: :one_for_one]

@@ -1,5 +1,5 @@
 defmodule Rafty.Server.State do
-  alias Rafty.{Server.ElectionState, Timer}
+  alias Rafty.Timer
 
   defstruct id: nil,
             server_state: :follower,

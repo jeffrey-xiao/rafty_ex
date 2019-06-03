@@ -3,12 +3,13 @@ defmodule Rafty do
 
   @type term_index :: non_neg_integer()
 
+  @impl Application
   def start(_type, _args) do
     Rafty.Supervisor.start_link()
   end
 
-  def start_server(server_name, cluster_config, fsm_module) do
-    Rafty.ServersSupervisor.start_server(server_name, cluster_config, fsm_module)
+  def start_server(server_name, cluster_config, fsm_module, log_module) do
+    Rafty.ServersSupervisor.start_server(server_name, cluster_config, fsm_module, log_module)
   end
 
   def terminate_server(server_name) do
@@ -32,11 +33,9 @@ defmodule Rafty do
   end
 
   def catch_exit(func) do
-    try do
-      func.()
-    catch
-      :exit, {msg, _} when msg in [:noproc, :normal] -> {:error, :noproc}
-      :exit, {:timeout, _} -> {:error, :timeout}
-    end
+    func.()
+  catch
+    :exit, {msg, _} when msg in [:noproc, :normal] -> {:error, :noproc}
+    :exit, {:timeout, _} -> {:error, :timeout}
   end
 end

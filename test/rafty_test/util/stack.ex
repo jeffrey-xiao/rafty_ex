@@ -2,7 +2,7 @@ defmodule RaftyTest.Util.Stack do
   @behaviour Rafty.FSM
 
   @impl Rafty.FSM
-  def init(), do: []
+  def init, do: []
 
   @impl Rafty.FSM
   def execute(state, {:push, val}), do: {:ok, [val] ++ state}
