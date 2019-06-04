@@ -23,7 +23,7 @@ defmodule Rafty.Log.InMemoryStore do
   def get_metadata(state) do
     %{
       current_term_index: state.current_term_index,
-      voted_for: state.voted_for,
+      voted_for: state.voted_for
     }
   end
 

@@ -93,6 +93,7 @@ defmodule Rafty.Server do
         if rpc.entries != [] do
           Log.Server.append_entries(state.id, rpc.entries, rpc.prev_log_index)
         end
+
         min(max(rpc.leader_commit_index, state.commit_index), Log.Server.length(state.id))
       else
         state.commit_index
