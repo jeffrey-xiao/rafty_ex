@@ -24,7 +24,6 @@ defmodule Rafty.Log.InMemoryStore do
     %{
       current_term_index: state.current_term_index,
       voted_for: state.voted_for,
-      entries: []
     }
   end
 
@@ -45,7 +44,7 @@ defmodule Rafty.Log.InMemoryStore do
   end
 
   @impl Store
-  def append_entries(state, index, entries) do
+  def append_entries(state, entries, index) do
     {head, _tail} = Enum.split(state.entries, index)
     %{state | entries: head ++ entries}
   end

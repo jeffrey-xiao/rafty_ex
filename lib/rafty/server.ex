@@ -90,8 +90,10 @@ defmodule Rafty.Server do
     new_commit_index =
       if success do
         # TODO: This should change when we implement snapshotting and compaction.
-        Log.Server.append_entries(state.id, rpc.entries, rpc.prev_log_index)
-        min(max(rpc.leader_commit_index, state.commit_index), log_length)
+        if rpc.entries != [] do
+          Log.Server.append_entries(state.id, rpc.entries, rpc.prev_log_index)
+        end
+        min(max(rpc.leader_commit_index, state.commit_index), Log.Server.length(state.id))
       else
         state.commit_index
       end
@@ -216,8 +218,6 @@ defmodule Rafty.Server do
   def handle_info({:heartbeat_timeout, _ref}, state), do: {:noreply, state}
 
   defp broadcast_append_entries(state) do
-    log_length = Log.Server.length(state.id)
-
     state
     |> neighbours()
     |> Enum.each(fn neighbour ->

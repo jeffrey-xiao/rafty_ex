@@ -39,7 +39,7 @@ defmodule Rafty.Log.Server do
   end
 
   @impl GenServer
-  def init({server_name, log} = args) do
+  def init({server_name, log}) do
     {:ok, %__MODULE__{log: log, log_state: log.init(server_name)}}
   end
 
