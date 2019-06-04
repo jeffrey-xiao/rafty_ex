@@ -6,12 +6,11 @@ defmodule Rafty.Server.State do
             cluster_config: [],
             term_index: 0,
             leader: nil,
-            log: [],
             commit_index: 0,
             last_applied: 0,
             # Finite state machine specific state.
-            fsm_module: nil,
             fsm: nil,
+            fsm_state: nil,
             # Leader specific state.
             next_index: %{},
             match_index: %{},

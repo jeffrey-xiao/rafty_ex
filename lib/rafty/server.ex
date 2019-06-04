@@ -1,18 +1,18 @@
 defmodule Rafty.Server do
   require Logger
   use GenServer
-  alias Rafty.{RPC, Server.State, Timer}
+  alias Rafty.{Log, RPC, Server.State, Timer}
 
   @election_timeout_low 250
   @election_timeout_high 500
   @heartbeat_timeout 100
 
-  def start_link({server_name, _node_name, _cluster_config, _fsm_module, _log_module} = args) do
+  def start_link({server_name, _node_name, _cluster_config, _fsm, _log} = args) do
     GenServer.start_link(__MODULE__, args, name: server_name)
   end
 
   @impl GenServer
-  def init({server_name, node_name, cluster_config, fsm_module, log_module}) do
+  def init({server_name, node_name, cluster_config, fsm, _log}) do
     Logger.info("#{inspect({server_name, node_name})}: Started")
     :random.seed(:erlang.now())
 
@@ -20,8 +20,8 @@ defmodule Rafty.Server do
      %State{
        id: {server_name, node_name},
        cluster_config: cluster_config,
-       fsm_module: fsm_module,
-       fsm: fsm_module.init()
+       fsm: fsm,
+       fsm_state: fsm.init()
      }
      |> convert_to_follower(0)
      |> reset_election_timer()}
@@ -65,6 +65,8 @@ defmodule Rafty.Server do
 
     # TODO: Instead of returning a boolean for success, return the index of the log entry with the
     # same term index as the mismatch for efficiency.
+    log_length = Log.Server.length(state.id)
+
     success =
       cond do
         # Section 5.1: Server rejects all rejects with stale term numbers.
@@ -73,33 +75,29 @@ defmodule Rafty.Server do
 
         # Section 5.3: Fail if entry with index `prev_log_index` is not in log.
         # TODO: This should change when we implement snapshotting and compaction.
-        length(state.log) < rpc.prev_log_term_index ->
+        log_length < rpc.prev_log_index ->
           false
 
         # Section 5.3: Fail if entry does not the same term.
         true ->
-          case hd(state.log) do
+          case Log.Server.get_entry(state.id, log_length) do
             nil -> rpc.prev_log_term_index == nil
             entry -> entry.term_index == rpc.prev_log_term_index
           end
       end
 
     # TODO: This should change when we implement snapshotting and compaction.
-    {new_log, new_commit_index} =
+    new_commit_index =
       if success do
         # TODO: This should change when we implement snapshotting and compaction.
-        {head, tail} = Enum.split(state.log, rpc.prev_log_index)
-
-        {
-          [head | merge_logs(tail, rpc.entries)],
-          min(max(rpc.leader_commit_index, state.commit_index), length(state.log))
-        }
+        Log.Server.append_entries(state.id, rpc.entries, rpc.prev_log_index)
+        min(max(rpc.leader_commit_index, state.commit_index), log_length)
       else
-        {state.log, state.commit_index}
+        state.commit_index
       end
 
     state =
-      %{state | log: new_log, commit_index: new_commit_index}
+      %{state | commit_index: new_commit_index}
       |> advance_log()
       |> reset_election_timer()
 
@@ -109,7 +107,7 @@ defmodule Rafty.Server do
        to: rpc.from,
        term_index: state.term_index,
        last_applied: state.last_applied,
-       last_log_index: length(state.log),
+       last_log_index: log_length,
        success: success
      }, state}
   end
@@ -138,7 +136,7 @@ defmodule Rafty.Server do
           false
 
         # TODO: This should change when we implement snapshotting and compaction.
-        length(state.log) > rpc.last_log_index ->
+        Log.Server.length(state.id) > rpc.last_log_index ->
           false
 
         true ->
@@ -218,11 +216,19 @@ defmodule Rafty.Server do
   def handle_info({:heartbeat_timeout, _ref}, state), do: {:noreply, state}
 
   defp broadcast_append_entries(state) do
+    log_length = Log.Server.length(state.id)
+
     state
     |> neighbours()
     |> Enum.each(fn neighbour ->
-      {prev_log_index, prev_log_term_index, entries} =
-        split_log(state.log, state.next_index[neighbour])
+      prev_log_index = state.next_index[neighbour] - 1
+
+      prev_log_term_index =
+        if prev_log_index == 0,
+          do: nil,
+          else: Log.Server.get_entry(state.id, prev_log_index).term_index
+
+      entries = Log.Server.get_tail(state.id, state.next_index[neighbour])
 
       RPC.send_rpc(%RPC.AppendEntriesRequest{
         from: state.id,
@@ -244,18 +250,17 @@ defmodule Rafty.Server do
       else: state
   end
 
-  defp add_vote(state, voter), do: state
+  defp add_vote(state, _voter), do: state
 
   defp reset_election_timer(%{server_state: :leader} = state), do: state
 
   defp reset_election_timer(state) do
     Logger.info("#{inspect(state.id)}: Refreshing election timer")
 
-    state =
-      put_in(
-        state.election_timer,
-        Timer.reset(state.election_timer, election_timeout())
-      )
+    put_in(
+      state.election_timer,
+      Timer.reset(state.election_timer, election_timeout())
+    )
   end
 
   # TODO: Leader could be disposed if it cannot maintain a quorum.
@@ -271,10 +276,12 @@ defmodule Rafty.Server do
     new_term_index = state.term_index + 1
 
     # TODO: This should change when we implement snapshotting and compaction.
-    {last_log_index, last_log_term_index} =
-      if state.log == [],
-        do: {0, nil},
-        else: {length(state.log), tl(state.log).term_index}
+    last_log_index = Log.Server.length(state.id)
+
+    last_log_term_index =
+      if last_log_index == 0,
+        do: nil,
+        else: Log.Server.get_entry(state.id, last_log_index).term_index
 
     RPC.broadcast(
       %RPC.RequestVoteRequest{
@@ -316,7 +323,7 @@ defmodule Rafty.Server do
   defp convert_to_leader(state) do
     Logger.info("#{inspect(state.id)}: Converting to leader")
 
-    log_length = length(state.log)
+    log_length = Log.Server.length(state.id)
 
     %{
       state
@@ -334,20 +341,20 @@ defmodule Rafty.Server do
   defp advance_log(state) do
     if state.commit_index > state.last_applied do
       entry_count = state.commit_index - state.last_applied
-      {_head, tail} = Enum.split(state.log, state.last_applied)
 
-      new_fsm =
-        tail
+      new_fsm_state =
+        state.id
+        |> Log.Server.get_tail(state.last_applied)
         |> Enum.take(entry_count)
-        |> Enum.reduce(state.fsm, fn acc, entry ->
-          state.fsm_module.execute(acc, entry.command)
+        |> Enum.reduce(state.fsm_state, fn acc, entry ->
+          state.fsm.execute(acc, entry.command)
         end)
 
       Logger.info(
         "#{inspect(state.id)}: Applied #{state.last_applied + 1} to #{state.commit_index}"
       )
 
-      %{state | last_applied: state.commit_index, fsm: new_fsm}
+      %{state | last_applied: state.commit_index, fsm_state: new_fsm_state}
     else
       state
     end
@@ -360,23 +367,5 @@ defmodule Rafty.Server do
   defp election_timeout do
     :random.uniform(@election_timeout_high - @election_timeout_low + 1) - 1 +
       @election_timeout_low
-  end
-
-  defp merge_logs([], new), do: new
-
-  defp merge_logs(old, []), do: old
-
-  defp merge_logs([old_head | old_tail], [new_head, new_tail] = tail) do
-    if old_head.term_index != new_head.term_index do
-      tail
-    else
-      [old_head | merge_logs(old_tail, new_tail)]
-    end
-  end
-
-  # TOOO: This should change when we implement snapshotting and compaction.
-  defp split_log(log, index) do
-    {head, tail} = Enum.split(log, index)
-    {length(head), if(head == [], do: nil, else: tl(head).term_index), tail}
   end
 end
