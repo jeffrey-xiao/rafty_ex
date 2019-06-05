@@ -5,8 +5,10 @@ defmodule RaftyTest.Util do
     else
       test_fn.()
       |> case do
-        {res, true} -> res
-        {_, false} -> 
+        {res, true} ->
+          res
+
+        {_, false} ->
           Process.sleep(timeout)
           succeed_soon(test_fn, timeout * backoff_ratio, retries - 1, backoff_ratio)
       end

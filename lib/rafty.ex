@@ -6,11 +6,11 @@ defmodule Rafty do
   @type id :: {server_name(), node_name()}
   @type term_index :: non_neg_integer()
   @type args :: %{
-    server_name: server_name(),
-    node_name: node_name(),
-    fsm: atom(),
-    log: atom(),
-  }
+          server_name: server_name(),
+          node_name: node_name(),
+          fsm: atom(),
+          log: atom()
+        }
 
   @impl Application
   def start(_type, _args) do
@@ -43,7 +43,7 @@ defmodule Rafty do
     catch_exit(fn -> GenServer.call(server_name, :leader, timeout) end)
   end
 
-  @spec catch_exit((-> term())) :: term()
+  @spec catch_exit((() -> term())) :: term()
   def catch_exit(func) do
     func.()
   catch
