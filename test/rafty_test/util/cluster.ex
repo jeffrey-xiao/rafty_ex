@@ -2,20 +2,20 @@ defmodule RaftyTest.Util.Cluster do
   alias RaftyTest.Util
 
   def wait_for_election(cluster_config) do
-    Util.succeed_soon(fn timeout ->
+    Util.succeed_soon(fn ->
       cluster_config
-      |> Enum.map(fn id -> Task.async(fn -> Rafty.leader(id, timeout) end) end)
-      |> Enum.map(fn task -> Task.await(task) end)
-      |> Enum.filter(fn resp ->
+      |> Enum.map(fn id -> {Task.async(fn -> Rafty.leader(id) end), id} end)
+      |> Enum.map(fn {task, id} -> {Task.await(task), id} end)
+      |> Enum.filter(fn {resp, id} ->
         case resp do
           {:error, _msg} -> false
-          _ -> true
+          resp -> true
         end
       end)
-      |> Enum.find(fn leader -> leader != nil end)
+      |> Enum.find(fn {leader, id} -> leader == id end)
       |> case do
         nil -> {nil, false}
-        leader -> {leader, true}
+        {leader, id} -> {leader, true}
       end
     end)
   end

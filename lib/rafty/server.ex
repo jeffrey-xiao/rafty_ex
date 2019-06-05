@@ -17,7 +17,6 @@ defmodule Rafty.Server do
     Logger.info("#{inspect({args[:server_name], args[:node_name]})}: Started")
     :random.seed(:erlang.now())
 
-    IO.inspect(args)
     {:ok,
      %State{
        id: {args[:server_name], args[:node_name]},
@@ -356,12 +355,14 @@ defmodule Rafty.Server do
     Logger.info("#{inspect(state.id)}: Converting to leader")
 
     log_length = Log.Server.length(state.id)
-    Log.Server.set_voted_for(state.id, state.id)
+    Log.Server.set_voted_for(state.id, nil)
+    Enum.each(state.leader_requests, fn client -> GenServer.reply(client, state.id) end)
 
     %{
       state
       | server_state: :leader,
         leader: state.id,
+        leader_requests: [],
         next_index:
           state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
         match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
