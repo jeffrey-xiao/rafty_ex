@@ -12,8 +12,8 @@ defmodule Rafty.Server.Supervisor do
   @impl Supervisor
   def init({server_name, _node_name, _cluster_config, _fsm, log} = args) do
     children = [
-      {Rafty.Server, args},
-      {Rafty.Log.Server, {server_name, log}}
+      {Rafty.Log.Server, {server_name, log}},
+      {Rafty.Server, args}
     ]
 
     opts = [strategy: :one_for_one]

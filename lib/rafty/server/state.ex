@@ -4,7 +4,6 @@ defmodule Rafty.Server.State do
   defstruct id: nil,
             server_state: :follower,
             cluster_config: [],
-            term_index: 0,
             leader: nil,
             commit_index: 0,
             last_applied: 0,
@@ -18,7 +17,6 @@ defmodule Rafty.Server.State do
             # Election specific state.
             votes: MapSet.new(),
             election_timer: Timer.new(:election_timeout),
-            voted_for: nil,
             # Client requests
             leader_requests: []
 end

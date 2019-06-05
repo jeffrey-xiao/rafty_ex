@@ -14,12 +14,33 @@ defmodule Rafty.Log.Server do
     :"LogServer_#{server_name}"
   end
 
-  def get_metadata({server_name, node_name}) do
-    GenServer.call(name(server_name), :get_metadata)
+  def get_term_index({server_name, node_name}) do
+    GenServer.call(name(server_name), :get_metadata)[:term_index]
   end
 
-  def set_metadata({server_name, node_name}, metadata) do
-    GenServer.cast(name(server_name), {:set_metadata, metadata})
+  def increment_term_index({server_name, node_name}) do
+    metadata = GenServer.call(name(server_name), :get_metadata)
+
+    GenServer.cast(
+      name(server_name),
+      {:set_metadata, put_in(metadata[:term_index], metadata[:term_index] + 1)}
+    )
+
+    metadata[:term_index] + 1
+  end
+
+  def set_term_index({server_name, node_name}, term_index) do
+    metadata = GenServer.call(name(server_name), :get_metadata)
+    GenServer.cast(name(server_name), {:set_metadata, put_in(metadata[:term_index], term_index)})
+  end
+
+  def get_voted_for({server_name, node_name}) do
+    GenServer.call(name(server_name), :get_metadata)[:voted_for]
+  end
+
+  def set_voted_for({server_name, node_name}, voted_for) do
+    metadata = GenServer.call(name(server_name), :get_metadata)
+    GenServer.cast(name(server_name), {:set_metadata, put_in(metadata[:voted_for], voted_for)})
   end
 
   def get_entry({server_name, node_name}, index) do

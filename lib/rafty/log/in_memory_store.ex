@@ -3,9 +3,9 @@ defmodule Rafty.Log.InMemoryStore do
 
   @behaviour Store
 
-  @enforce_keys [:current_term_index, :voted_for, :entries]
+  @enforce_keys [:term_index, :voted_for, :entries]
   defstruct [
-    :current_term_index,
+    :term_index,
     :voted_for,
     :entries
   ]
@@ -13,7 +13,7 @@ defmodule Rafty.Log.InMemoryStore do
   @impl Store
   def init(_server_name) do
     %__MODULE__{
-      current_term_index: 0,
+      term_index: 0,
       voted_for: nil,
       entries: []
     }
@@ -22,7 +22,7 @@ defmodule Rafty.Log.InMemoryStore do
   @impl Store
   def get_metadata(state) do
     %{
-      current_term_index: state.current_term_index,
+      term_index: state.term_index,
       voted_for: state.voted_for
     }
   end
