@@ -1,6 +1,7 @@
 defmodule Rafty.Supervisor do
   use Supervisor
 
+  @spec start_link :: Supervisor.on_start()
   def start_link do
     Supervisor.start_link(__MODULE__, nil, name: __MODULE__)
   end

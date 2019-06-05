@@ -1,10 +1,10 @@
 defmodule Rafty.Log.Store do
   @type state :: any()
-  @callback init(atom()) :: state()
-  @callback get_metadata(state()) :: any()
-  @callback set_metadata(state(), any()) :: state()
-  @callback get_entry(state(), pos_integer()) :: any()
-  @callback get_tail(state(), pos_integer()) :: [any()]
-  @callback append_entries(state(), any(), pos_integer()) :: state()
+  @callback init(Rafty.server_name()) :: state()
+  @callback get_metadata(state()) :: %{term_index: non_neg_integer(), voted_for: Rafty.id() | nil}
+  @callback set_metadata(state(), %{}) :: state()
+  @callback get_entry(state(), non_neg_integer()) :: any()
+  @callback get_tail(state(), non_neg_integer()) :: [Rafty.Log.Entry.t()]
+  @callback append_entries(state(), [Rafty.Log.Entry.t()], non_neg_integer()) :: state()
   @callback length(state()) :: non_neg_integer()
 end

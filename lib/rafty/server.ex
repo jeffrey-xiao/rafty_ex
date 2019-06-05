@@ -7,6 +7,7 @@ defmodule Rafty.Server do
   @election_timeout_high 500
   @heartbeat_timeout 100
 
+  @spec start_link(Rafty.args()) :: GenServer.on_start()
   def start_link(args) do
     GenServer.start_link(__MODULE__, args, name: args[:server_name])
   end

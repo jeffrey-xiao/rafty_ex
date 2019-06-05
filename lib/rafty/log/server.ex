@@ -6,18 +6,22 @@ defmodule Rafty.Log.Server do
     :log_state
   ]
 
+  @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
   def start_link(args) do
     GenServer.start_link(__MODULE__, args, name: name(args[:server_name]))
   end
 
+  @spec name(Rafty.server_name()) :: atom()
   def name(server_name) do
     :"LogServer_#{server_name}"
   end
 
+  @spec get_term_index(Rafty.id()) :: Rafty.term_index()
   def get_term_index({server_name, node_name}) do
     GenServer.call(name(server_name), :get_metadata)[:term_index]
   end
 
+  @spec increment_term_index(Rafty.id()) :: Rafty.term_index()
   def increment_term_index({server_name, node_name}) do
     metadata = GenServer.call(name(server_name), :get_metadata)
 
@@ -29,32 +33,39 @@ defmodule Rafty.Log.Server do
     metadata[:term_index] + 1
   end
 
+  @spec set_term_index(Rafty.id(), Rafty.term_index()) :: :ok
   def set_term_index({server_name, node_name}, term_index) do
     metadata = GenServer.call(name(server_name), :get_metadata)
     GenServer.cast(name(server_name), {:set_metadata, put_in(metadata[:term_index], term_index)})
   end
 
+  @spec get_voted_for(Rafty.id()) :: Rafty.id()
   def get_voted_for({server_name, node_name}) do
     GenServer.call(name(server_name), :get_metadata)[:voted_for]
   end
 
+  @spec set_voted_for(Rafty.id(), Rafty.id() | nil) :: :ok
   def set_voted_for({server_name, node_name}, voted_for) do
     metadata = GenServer.call(name(server_name), :get_metadata)
     GenServer.cast(name(server_name), {:set_metadata, put_in(metadata[:voted_for], voted_for)})
   end
 
+  @spec get_entry(Rafty.id(), non_neg_integer()) :: Rafty.Log.Entry.t() | nil
   def get_entry({server_name, node_name}, index) do
     GenServer.call(name(server_name), {:get_entry, index})
   end
 
+  @spec get_tail(Rafty.id(), non_neg_integer()) :: [Rafty.Log.Entry.t()]
   def get_tail({server_name, node_name}, index) do
     GenServer.call(name(server_name), {:get_tail, index})
   end
 
+  @spec append_entries(Rafty.id(), [Rafty.Log.Entry.t()], non_neg_integer()) :: :ok
   def append_entries({server_name, node_name}, entries, index) do
     GenServer.cast(name(server_name), {:append_entries, entries, index})
   end
 
+  @spec length(Rafty.id()) :: non_neg_integer()
   def length({server_name, node_name}) do
     GenServer.call(name(server_name), :length)
   end
