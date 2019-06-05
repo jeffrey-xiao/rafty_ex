@@ -194,6 +194,7 @@ defmodule Rafty.Server do
 
     {new_next_index, new_match_index} =
       if rpc.success,
+        # TODO: Update commit index.
         do:
           {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
            Map.put(state.match_index, rpc.from, rpc.last_applied)},
