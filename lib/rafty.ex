@@ -8,8 +8,8 @@ defmodule Rafty do
     Rafty.Supervisor.start_link()
   end
 
-  def start_server(server_name, cluster_config, fsm, log) do
-    Rafty.ServersSupervisor.start_server(server_name, cluster_config, fsm, log)
+  def start_server(args) do
+    Rafty.ServersSupervisor.start_server(args)
   end
 
   def terminate_server(server_name) do

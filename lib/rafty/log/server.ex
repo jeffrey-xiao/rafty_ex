@@ -6,8 +6,8 @@ defmodule Rafty.Log.Server do
     :log_state
   ]
 
-  def start_link({server_name, _log} = args) do
-    GenServer.start_link(__MODULE__, args, name: name(server_name))
+  def start_link(args) do
+    GenServer.start_link(__MODULE__, args, name: name(args[:server_name]))
   end
 
   def name(server_name) do
@@ -60,8 +60,8 @@ defmodule Rafty.Log.Server do
   end
 
   @impl GenServer
-  def init({server_name, log}) do
-    {:ok, %__MODULE__{log: log, log_state: log.init(server_name)}}
+  def init(args) do
+    {:ok, %__MODULE__{log: args[:log], log_state: args[:log].init(args[:server_name])}}
   end
 
   @impl GenServer

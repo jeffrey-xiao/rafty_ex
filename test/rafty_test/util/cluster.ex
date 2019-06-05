@@ -1,8 +1,8 @@
 defmodule RaftyTest.Util.Cluster do
-  def wait_for_election(cluster_config, timeout \\ 250, retries \\ 3) do
-    if retries == 0 do
-      :timeout
-    else
+  alias RaftyTest.Util
+
+  def wait_for_election(cluster_config) do
+    Util.succeed_soon(fn timeout ->
       cluster_config
       |> Enum.map(fn id -> Task.async(fn -> Rafty.leader(id, timeout) end) end)
       |> Enum.map(fn task -> Task.await(task) end)
@@ -14,12 +14,9 @@ defmodule RaftyTest.Util.Cluster do
       end)
       |> Enum.find(fn leader -> leader != nil end)
       |> case do
-        nil ->
-          wait_for_election(cluster_config, timeout, retries - 1)
-
-        leader ->
-          leader
+        nil -> {nil, false}
+        leader -> {leader, true}
       end
-    end
+    end)
   end
 end

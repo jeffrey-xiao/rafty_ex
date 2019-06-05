@@ -7,21 +7,22 @@ defmodule Rafty.Server do
   @election_timeout_high 500
   @heartbeat_timeout 100
 
-  def start_link({server_name, _node_name, _cluster_config, _fsm, _log} = args) do
-    GenServer.start_link(__MODULE__, args, name: server_name)
+  def start_link(args) do
+    GenServer.start_link(__MODULE__, args, name: args[:server_name])
   end
 
   @impl GenServer
-  def init({server_name, node_name, cluster_config, fsm, _log}) do
-    Logger.info("#{inspect({server_name, node_name})}: Started")
+  def init(args) do
+    Logger.info("#{inspect({args[:server_name], args[:node_name]})}: Started")
     :random.seed(:erlang.now())
 
+    IO.inspect(args)
     {:ok,
      %State{
-       id: {server_name, node_name},
-       cluster_config: cluster_config,
-       fsm: fsm,
-       fsm_state: fsm.init()
+       id: {args[:server_name], args[:node_name]},
+       cluster_config: args[:cluster_config],
+       fsm: args[:fsm],
+       fsm_state: args[:fsm].init()
      }
      |> convert_to_follower()
      |> reset_election_timer()}
