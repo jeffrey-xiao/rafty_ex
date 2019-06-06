@@ -29,8 +29,27 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
-  def handle_call(:execute, from, state) do
-    {:reply, nil, state}
+  def handle_call({:execute, payload}, from, state) do
+    term_index = Log.Server.get_term_index(state.id)
+    log_index = Log.Server.length(state.id)
+
+    Log.Server.append_entries(
+      state.id,
+      [
+        %Log.Entry{
+          term_index: term_index,
+          command: :user,
+          payload: payload
+        }
+      ],
+      log_index
+    )
+
+    broadcast_append_entries(state)
+
+    {:noreply,
+     %{state | execute_requests: [{from, log_index + 1} | state.execute_requests]}
+     |> advance_commit()}
   end
 
   @impl GenServer
@@ -108,7 +127,7 @@ defmodule Rafty.Server do
 
     state =
       %{state | commit_index: new_commit_index}
-      |> advance_log()
+      |> advance_applied()
       |> reset_election_timer()
 
     {:reply,
@@ -194,7 +213,6 @@ defmodule Rafty.Server do
 
     {new_next_index, new_match_index} =
       if rpc.success,
-        # TODO: Update commit index.
         do:
           {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
            Map.put(state.match_index, rpc.from, rpc.last_applied)},
@@ -202,7 +220,8 @@ defmodule Rafty.Server do
           {Map.update!(state.next_index, rpc.from, fn next_index -> next_index - 1 end),
            state.match_index}
 
-    {:noreply, %{state | next_index: new_next_index, match_index: new_match_index}}
+    {:noreply,
+     %{state | next_index: new_next_index, match_index: new_match_index} |> advance_commit()}
   end
 
   @impl GenServer
@@ -372,7 +391,27 @@ defmodule Rafty.Server do
     |> reset_heartbeat_timer()
   end
 
-  defp advance_log(state) do
+  defp advance_commit(state) do
+    index = state.cluster_config |> length |> div(2)
+
+    log_index =
+      state.match_index
+      |> Enum.map(fn {_id, index} -> index end)
+      |> Enum.sort()
+      |> Enum.at(index)
+
+    entry = Log.Server.get_entry(state.id, log_index)
+    term_index = Log.Server.get_term_index(state.id)
+
+    commit_index =
+      if entry != nil && entry.term_index == term_index,
+        do: log_index,
+        else: state.commit_index
+
+    %{state | commit_index: commit_index}
+  end
+
+  defp advance_applied(state) do
     if state.commit_index > state.last_applied do
       entry_count = state.commit_index - state.last_applied
 
@@ -381,7 +420,9 @@ defmodule Rafty.Server do
         |> Log.Server.get_tail(state.last_applied)
         |> Enum.take(entry_count)
         |> Enum.reduce(state.fsm_state, fn acc, entry ->
-          state.fsm.execute(acc, entry.command)
+          if entry.command == :user,
+            do: state.fsm.execute(acc, entry.payload),
+            else: acc
         end)
 
       Logger.info(

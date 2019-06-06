@@ -1,7 +1,7 @@
 defmodule Rafty.ServersSupervisor do
   use DynamicSupervisor
 
-  @spec start_link(Rafty.args()) :: DynamicSupervisor.on_start()
+  @spec start_link(Rafty.args()) :: Supervisor.on_start()
   def start_link(args) do
     DynamicSupervisor.start_link(__MODULE__, args, name: __MODULE__)
   end

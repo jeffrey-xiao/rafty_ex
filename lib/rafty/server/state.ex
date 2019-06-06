@@ -18,5 +18,6 @@ defmodule Rafty.Server.State do
             votes: MapSet.new(),
             election_timer: Timer.new(:election_timeout),
             # Client requests
-            leader_requests: []
+            leader_requests: [],
+            execute_requests: []
 end

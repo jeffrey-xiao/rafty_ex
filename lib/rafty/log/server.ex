@@ -16,12 +16,12 @@ defmodule Rafty.Log.Server do
     :"LogServer_#{server_name}"
   end
 
-  @spec get_term_index(Rafty.id()) :: Rafty.term_index()
+  @spec get_term_index(Rafty.id()) :: non_neg_integer()
   def get_term_index({server_name, node_name}) do
     GenServer.call(name(server_name), :get_metadata)[:term_index]
   end
 
-  @spec increment_term_index(Rafty.id()) :: Rafty.term_index()
+  @spec increment_term_index(Rafty.id()) :: non_neg_integer()
   def increment_term_index({server_name, node_name}) do
     metadata = GenServer.call(name(server_name), :get_metadata)
 
@@ -33,7 +33,7 @@ defmodule Rafty.Log.Server do
     metadata[:term_index] + 1
   end
 
-  @spec set_term_index(Rafty.id(), Rafty.term_index()) :: :ok
+  @spec set_term_index(Rafty.id(), non_neg_integer()) :: :ok
   def set_term_index({server_name, node_name}, term_index) do
     metadata = GenServer.call(name(server_name), :get_metadata)
     GenServer.cast(name(server_name), {:set_metadata, put_in(metadata[:term_index], term_index)})
