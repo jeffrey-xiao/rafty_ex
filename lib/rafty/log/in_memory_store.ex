@@ -3,6 +3,11 @@ defmodule Rafty.Log.InMemoryStore do
 
   @behaviour Store
 
+  @type t :: %__MODULE__{
+          term_index: non_neg_integer(),
+          voted_for: Rafty.id() | nil,
+          entries: [Rafty.Log.Entry.t()]
+        }
   @enforce_keys [:term_index, :voted_for, :entries]
   defstruct [
     :term_index,
@@ -46,7 +51,7 @@ defmodule Rafty.Log.InMemoryStore do
   @impl Store
   def append_entries(state, entries, index) do
     {head, _tail} = Enum.split(state.entries, index)
-    %{state | entries: head ++ entries}
+    %__MODULE__{state | entries: head ++ entries}
   end
 
   @impl Store

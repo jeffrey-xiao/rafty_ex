@@ -2,6 +2,15 @@ defmodule Rafty.RPC do
   require Logger
 
   defmodule AppendEntriesRequest do
+    @type t :: %__MODULE__{
+            from: Rafty.id(),
+            to: Rafty.id() | nil,
+            term_index: non_neg_integer(),
+            prev_log_index: non_neg_integer(),
+            prev_log_term_index: non_neg_integer() | nil,
+            entries: [Rafty.Log.Entry.t()],
+            leader_commit_index: non_neg_integer()
+          }
     @enforce_keys [
       :from,
       :term_index,
@@ -22,6 +31,13 @@ defmodule Rafty.RPC do
   end
 
   defmodule AppendEntriesResponse do
+    @type t :: %__MODULE__{
+            from: Rafty.id(),
+            to: Rafty.id() | nil,
+            term_index: non_neg_integer(),
+            last_log_index: non_neg_integer(),
+            success: bool()
+          }
     @enforce_keys [
       :from,
       :term_index,
@@ -39,6 +55,13 @@ defmodule Rafty.RPC do
   end
 
   defmodule RequestVoteRequest do
+    @type t :: %__MODULE__{
+            from: Rafty.id(),
+            to: Rafty.id() | nil,
+            term_index: non_neg_integer(),
+            last_log_index: non_neg_integer(),
+            last_log_term_index: non_neg_integer()
+          }
     @enforce_keys [
       :from,
       :term_index,
@@ -55,6 +78,12 @@ defmodule Rafty.RPC do
   end
 
   defmodule RequestVoteResponse do
+    @type t :: %__MODULE__{
+            from: Rafty.id(),
+            to: Rafty.id() | nil,
+            term_index: non_neg_integer(),
+            vote_granted: bool()
+          }
     @enforce_keys [
       :from,
       :term_index,
@@ -68,6 +97,7 @@ defmodule Rafty.RPC do
     ]
   end
 
+  @spec broadcast(Rafty.rpc(), [Rafty.id()]) :: :ok
   def broadcast(rpc, neighbours) do
     neighbours
     |> Enum.each(fn neighbour ->
@@ -75,10 +105,12 @@ defmodule Rafty.RPC do
     end)
   end
 
+  @spec send_rpc(Rafty.rpc()) :: DynamicSupervisor.on_start_child()
   def send_rpc(rpc) do
     Task.Supervisor.start_child(Rafty.RPC.Supervisor, fn -> send_rpc_impl(rpc) end)
   end
 
+  @spec send_rpc_impl(Rafty.rpc()) :: :ok | {:error, term()}
   def send_rpc_impl(rpc) do
     rpc.to
     |> GenServer.call(rpc)

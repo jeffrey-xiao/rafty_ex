@@ -22,7 +22,7 @@ defmodule Rafty.Timer do
     timer = stop(timer)
     ref = make_ref()
     timer_ref = Process.send_after(self(), {timer.command, ref}, timeout)
-    %{timer | timer_ref: timer_ref, ref: ref}
+    %__MODULE__{timer | timer_ref: timer_ref, ref: ref}
   end
 
   @spec stop(t()) :: t()
@@ -31,6 +31,6 @@ defmodule Rafty.Timer do
       Process.cancel_timer(timer.timer_ref)
     end
 
-    %{timer | timer_ref: nil, ref: nil}
+    %__MODULE__{timer | timer_ref: nil, ref: nil}
   end
 end

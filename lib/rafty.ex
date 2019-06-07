@@ -12,6 +12,11 @@ defmodule Rafty do
           log: atom()
         }
   @type catch_exit_error() :: {:error, :noproc | :timeout}
+  @type rpc() ::
+          Rafty.RPC.AppendEntriesRequest.t()
+          | Rafty.RPC.AppendEntriesResponse.t()
+          | Rafty.RPC.RequestVoteRequest.t()
+          | Rafty.RPC.RequestVoteResponse.t()
 
   @impl Application
   def start(_type, _args) do
