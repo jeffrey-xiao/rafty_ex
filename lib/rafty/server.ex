@@ -89,8 +89,8 @@ defmodule Rafty.Server do
         Enum.each(state.leader_requests, fn client -> GenServer.reply(client, rpc.from) end)
         Log.Server.set_term_index(state.id, rpc.term_index)
 
-        {%State{state | leader: rpc.from, leader_requests: []} |> convert_to_follower(),
-         rpc.term_index}
+        state = convert_to_follower(state)
+        {%State{state | leader: rpc.from, leader_requests: []}, rpc.term_index}
       else
         {state, term_index}
       end
@@ -344,6 +344,7 @@ defmodule Rafty.Server do
     %State{
       state
       | server_state: :follower,
+        leader: nil,
         next_index: %{},
         match_index: %{},
         votes: MapSet.new()
