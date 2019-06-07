@@ -25,7 +25,6 @@ defmodule Rafty.RPC do
     @enforce_keys [
       :from,
       :term_index,
-      :last_applied,
       :last_log_index,
       :success
     ]

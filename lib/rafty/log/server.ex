@@ -25,7 +25,7 @@ defmodule Rafty.Log.Server do
   def increment_term_index({server_name, node_name}) do
     metadata = GenServer.call(name(server_name), :get_metadata)
 
-    GenServer.cast(
+    GenServer.call(
       name(server_name),
       {:set_metadata, put_in(metadata[:term_index], metadata[:term_index] + 1)}
     )
@@ -36,7 +36,7 @@ defmodule Rafty.Log.Server do
   @spec set_term_index(Rafty.id(), non_neg_integer()) :: :ok
   def set_term_index({server_name, node_name}, term_index) do
     metadata = GenServer.call(name(server_name), :get_metadata)
-    GenServer.cast(name(server_name), {:set_metadata, put_in(metadata[:term_index], term_index)})
+    GenServer.call(name(server_name), {:set_metadata, put_in(metadata[:term_index], term_index)})
   end
 
   @spec get_voted_for(Rafty.id()) :: Rafty.id()
@@ -47,7 +47,7 @@ defmodule Rafty.Log.Server do
   @spec set_voted_for(Rafty.id(), Rafty.id() | nil) :: :ok
   def set_voted_for({server_name, node_name}, voted_for) do
     metadata = GenServer.call(name(server_name), :get_metadata)
-    GenServer.cast(name(server_name), {:set_metadata, put_in(metadata[:voted_for], voted_for)})
+    GenServer.call(name(server_name), {:set_metadata, put_in(metadata[:voted_for], voted_for)})
   end
 
   @spec get_entry(Rafty.id(), non_neg_integer()) :: Rafty.Log.Entry.t() | nil
@@ -62,7 +62,7 @@ defmodule Rafty.Log.Server do
 
   @spec append_entries(Rafty.id(), [Rafty.Log.Entry.t()], non_neg_integer()) :: :ok
   def append_entries({server_name, node_name}, entries, index) do
-    GenServer.cast(name(server_name), {:append_entries, entries, index})
+    GenServer.call(name(server_name), {:append_entries, entries, index})
   end
 
   @spec length(Rafty.id()) :: non_neg_integer()
@@ -96,13 +96,13 @@ defmodule Rafty.Log.Server do
   end
 
   @impl GenServer
-  def handle_cast({:set_metadata, metadata}, state) do
-    {:noreply, state.log_state |> put_in(state.log.set_metadata(state.log_state, metadata))}
+  def handle_call({:set_metadata, metadata}, _from, state) do
+    {:reply, :ok, state.log_state |> put_in(state.log.set_metadata(state.log_state, metadata))}
   end
 
   @impl GenServer
-  def handle_cast({:append_entries, entries, index}, state) do
-    {:noreply,
+  def handle_call({:append_entries, entries, index}, _from, state) do
+    {:reply, :ok,
      state.log_state |> put_in(state.log.append_entries(state.log_state, entries, index))}
   end
 end

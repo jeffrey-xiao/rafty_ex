@@ -5,7 +5,7 @@ defmodule RaftyTest.Util.Stack do
   def init, do: []
 
   @impl Rafty.FSM
-  def execute(state, {:push, val}), do: {:ok, [val] ++ state}
+  def execute(state, {:push, val}), do: {:ok, [val | state]}
 
   @impl Rafty.FSM
   def execute(state, :pop) do

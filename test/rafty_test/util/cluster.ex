@@ -1,7 +1,7 @@
 defmodule RaftyTest.Util.Cluster do
   alias RaftyTest.Util
 
-  def wait_for_election(cluster_config) do
+  def wait_for_leader(cluster_config) do
     Util.succeed_soon(fn ->
       resps =
         cluster_config
@@ -47,6 +47,7 @@ defmodule RaftyTest.Util.Cluster do
 
       index = cluster_config |> length |> div(2)
       commit_index = Enum.at(commit_indexes, index)
+
       if log_index <= commit_index,
         do: {nil, true},
         else: {nil, false}

@@ -29,7 +29,7 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
-  def handle_call({:execute, payload}, from, state) do
+  def handle_call({:execute, payload}, from, %{server_state: :leader} = state) do
     term_index = Log.Server.get_term_index(state.id)
     log_index = Log.Server.length(state.id)
 
@@ -48,9 +48,16 @@ defmodule Rafty.Server do
     broadcast_append_entries(state)
 
     {:noreply,
-     %{state | execute_requests: [{from, log_index + 1} | state.execute_requests]}
+     %{
+       state
+       | execute_requests: [{from, log_index + 1} | state.execute_requests],
+         match_index: Map.put(state.match_index, state.id, log_index + 1)
+     }
      |> advance_commit()}
   end
+
+  @impl GenServer
+  def handle_call({:execute, _payload}, _from, _state), do: :error
 
   @impl GenServer
   def handle_call(:query, from, state) do
@@ -64,7 +71,6 @@ defmodule Rafty.Server do
       state.last_applied}, state}
   end
 
-  # TODO: Have a queue of clients waiting to hear from leaders.
   @impl GenServer
   def handle_call(:leader, from, state) do
     if state.leader != nil,
@@ -74,7 +80,7 @@ defmodule Rafty.Server do
 
   @impl GenServer
   def handle_call(%RPC.AppendEntriesRequest{} = rpc, _from, state) do
-    Logger.info("#{inspect(state.id)}: Received append_entries_request")
+    Logger.info("#{inspect(state.id)}: Received append_entries_request: #{inspect(rpc)}")
 
     term_index = Log.Server.get_term_index(state.id)
 
@@ -106,7 +112,7 @@ defmodule Rafty.Server do
 
         # Section 5.3: Fail if entry does not the same term.
         true ->
-          case Log.Server.get_entry(state.id, log_length) do
+          case Log.Server.get_entry(state.id, rpc.prev_log_index) do
             nil -> rpc.prev_log_term_index == nil
             entry -> entry.term_index == rpc.prev_log_term_index
           end
@@ -135,8 +141,7 @@ defmodule Rafty.Server do
        from: rpc.to,
        to: rpc.from,
        term_index: term_index,
-       last_applied: state.last_applied,
-       last_log_index: log_length,
+       last_log_index: Log.Server.length(state.id),
        success: success
      }, state}
   end
@@ -199,7 +204,7 @@ defmodule Rafty.Server do
 
   @impl GenServer
   def handle_cast(%RPC.AppendEntriesResponse{} = rpc, state) do
-    Logger.info("#{inspect(state.id)}: Received append_entries_response")
+    Logger.info("#{inspect(state.id)}: Received append_entries_response: #{inspect(rpc)}")
 
     term_index = Log.Server.get_term_index(state.id)
 
@@ -215,13 +220,15 @@ defmodule Rafty.Server do
       if rpc.success,
         do:
           {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
-           Map.put(state.match_index, rpc.from, rpc.last_applied)},
+           Map.put(state.match_index, rpc.from, rpc.last_log_index)},
         else:
           {Map.update!(state.next_index, rpc.from, fn next_index -> next_index - 1 end),
            state.match_index}
 
     {:noreply,
-     %{state | next_index: new_next_index, match_index: new_match_index} |> advance_commit()}
+     %{state | next_index: new_next_index, match_index: new_match_index}
+     |> advance_commit()
+     |> advance_applied()}
   end
 
   @impl GenServer
@@ -269,40 +276,9 @@ defmodule Rafty.Server do
   @impl GenServer
   def handle_info({:heartbeat_timeout, _ref}, state), do: {:noreply, state}
 
-  defp broadcast_append_entries(state) do
-    state
-    |> neighbours()
-    |> Enum.each(fn neighbour ->
-      prev_log_index = state.next_index[neighbour] - 1
-
-      prev_log_term_index =
-        if prev_log_index == 0,
-          do: nil,
-          else: Log.Server.get_entry(state.id, prev_log_index).term_index
-
-      entries = Log.Server.get_tail(state.id, state.next_index[neighbour])
-
-      RPC.send_rpc(%RPC.AppendEntriesRequest{
-        from: state.id,
-        to: neighbour,
-        term_index: Log.Server.get_term_index(state.id),
-        prev_log_index: prev_log_index,
-        prev_log_term_index: prev_log_term_index,
-        entries: entries,
-        leader_commit_index: state.commit_index
-      })
-    end)
+  defp neighbours(state) do
+    state.cluster_config |> Enum.reject(fn id -> id == state.id end)
   end
-
-  defp add_vote(%{server_state: :candidate} = state, voter) do
-    state = put_in(state.votes, MapSet.put(state.votes, voter))
-
-    if (state.cluster_config |> length |> div(2)) + 1 <= MapSet.size(state.votes),
-      do: state |> convert_to_leader(),
-      else: state
-  end
-
-  defp add_vote(state, _voter), do: state
 
   defp reset_election_timer(%{server_state: :leader} = state), do: state
 
@@ -391,6 +367,31 @@ defmodule Rafty.Server do
     |> reset_heartbeat_timer()
   end
 
+  defp broadcast_append_entries(state) do
+    state
+    |> neighbours()
+    |> Enum.each(fn neighbour ->
+      prev_log_index = state.next_index[neighbour] - 1
+
+      prev_log_term_index =
+        if prev_log_index == 0,
+          do: nil,
+          else: Log.Server.get_entry(state.id, prev_log_index).term_index
+
+      entries = Log.Server.get_tail(state.id, state.next_index[neighbour])
+
+      RPC.send_rpc(%RPC.AppendEntriesRequest{
+        from: state.id,
+        to: neighbour,
+        term_index: Log.Server.get_term_index(state.id),
+        prev_log_index: prev_log_index,
+        prev_log_term_index: prev_log_term_index,
+        entries: entries,
+        leader_commit_index: state.commit_index
+      })
+    end)
+  end
+
   defp advance_commit(state) do
     index = state.cluster_config |> length |> div(2)
 
@@ -415,32 +416,69 @@ defmodule Rafty.Server do
     if state.commit_index > state.last_applied do
       entry_count = state.commit_index - state.last_applied
 
-      new_fsm_state =
+      {fsm_state, execute_requests} =
         state.id
-        |> Log.Server.get_tail(state.last_applied)
+        |> Log.Server.get_tail(state.last_applied + 1)
         |> Enum.take(entry_count)
-        |> Enum.reduce(state.fsm_state, fn acc, entry ->
-          if entry.command == :user,
-            do: state.fsm.execute(acc, entry.payload),
-            else: acc
+        |> Enum.with_index()
+        |> Enum.reduce({state.fsm_state, state.execute_requests}, fn {entry, index},
+                                                                     {fsm_state, execute_requests} =
+                                                                       acc ->
+          if entry.command == :user do
+            {resp, fsm_state} = state.fsm.execute(fsm_state, entry.payload)
+
+            execute_requests =
+              respond_to_execute_requests(execute_requests, index + state.last_applied + 1, resp)
+
+            {fsm_state, execute_requests}
+          else
+            acc
+          end
         end)
 
       Logger.info(
         "#{inspect(state.id)}: Applied #{state.last_applied + 1} to #{state.commit_index}"
       )
 
-      %{state | last_applied: state.commit_index, fsm_state: new_fsm_state}
+      %{
+        state
+        | last_applied: state.commit_index,
+          fsm_state: fsm_state,
+          execute_requests: execute_requests
+      }
     else
       state
     end
   end
 
-  defp neighbours(state) do
-    state.cluster_config |> Enum.reject(fn id -> id == state.id end)
+  defp respond_to_execute_requests([], applied_log_index, resp), do: []
+
+  defp respond_to_execute_requests([{from, log_index} | tail] = reqs, applied_log_index, resp) do
+    cond do
+      log_index < applied_log_index ->
+        respond_to_execute_requests(tail, applied_log_index, resp)
+
+      log_index == applied_log_index ->
+        GenServer.reply(from, resp)
+        tail
+
+      log_index > applied_log_index ->
+        reqs
+    end
   end
 
   defp election_timeout do
     :random.uniform(@election_timeout_high - @election_timeout_low + 1) - 1 +
       @election_timeout_low
   end
+
+  defp add_vote(%{server_state: :candidate} = state, voter) do
+    state = put_in(state.votes, MapSet.put(state.votes, voter))
+
+    if (state.cluster_config |> length |> div(2)) + 1 <= MapSet.size(state.votes),
+      do: state |> convert_to_leader(),
+      else: state
+  end
+
+  defp add_vote(state, _voter), do: state
 end

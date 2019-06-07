@@ -23,30 +23,30 @@ defmodule Rafty do
     Rafty.ServersSupervisor.start_server(args)
   end
 
-  @spec terminate_server(server_name()) :: :ok | {:error, :not_found}
-  def terminate_server(server_name) do
-    Rafty.ServersSupervisor.terminate_server(server_name)
+  @spec terminate_server(id()) :: :ok | {:error, :not_found}
+  def terminate_server(id) do
+    Rafty.ServersSupervisor.terminate_server(id)
   end
 
-  @spec execute(server_name(), term(), timeout()) :: term() | catch_exit_error()
-  def execute(server_name, payload, timeout \\ 5000) do
-    catch_exit(fn -> GenServer.call(server_name, {:execute, payload}, timeout) end)
+  @spec execute(id(), term(), timeout()) :: term() | catch_exit_error()
+  def execute(id, payload, timeout \\ 5000) do
+    catch_exit(fn -> GenServer.call(id, {:execute, payload}, timeout) end)
   end
 
-  @spec query(server_name(), term(), timeout()) :: term() | catch_exit_error()
-  def query(server_name, payload, timeout \\ 5000) do
+  @spec query(id(), term(), timeout()) :: term() | catch_exit_error()
+  def query(id, payload, timeout \\ 5000) do
     nil
   end
 
   @spec status(server_name(), timeout()) ::
-          {server_state(), non_neg_integer(), non_neg_integer()} | catch_exit_error()
-  def status(server_name, timeout \\ 5000) do
-    catch_exit(fn -> GenServer.call(server_name, :status, timeout) end)
+          {id(), non_neg_integer(), non_neg_integer()} | catch_exit_error()
+  def status(id, timeout \\ 5000) do
+    catch_exit(fn -> GenServer.call(id, :status, timeout) end)
   end
 
-  @spec leader(server_name(), timeout()) :: id() | nil | catch_exit_error()
-  def leader(server_name, timeout \\ 5000) do
-    catch_exit(fn -> GenServer.call(server_name, :leader, timeout) end)
+  @spec leader(id(), timeout()) :: id() | nil | catch_exit_error()
+  def leader(id, timeout \\ 5000) do
+    catch_exit(fn -> GenServer.call(id, :leader, timeout) end)
   end
 
   @spec catch_exit((() -> ret)) :: ret when ret: term() | catch_exit_error()

@@ -13,8 +13,10 @@ defmodule Rafty.ServersSupervisor do
     DynamicSupervisor.start_child(__MODULE__, child_spec)
   end
 
-  @spec terminate_server(Rafty.server_name()) :: :ok | {:error, :not_found}
-  def terminate_server(server_name) do
+  @spec terminate_server(Rafty.id()) :: :ok | {:error, :not_found}
+  def terminate_server(id) do
+    {server_name, _node_name} = id
+
     DynamicSupervisor.terminate_child(
       __MODULE__,
       Process.whereis(Rafty.Server.Supervisor.name(server_name))
