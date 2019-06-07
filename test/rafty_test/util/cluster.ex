@@ -30,4 +30,26 @@ defmodule RaftyTest.Util.Cluster do
         else: {nil, false}
     end)
   end
+
+  def wait_for_replication(cluster_config, log_index) do
+    Util.succeed_soon(fn ->
+      commit_indexes =
+        cluster_config
+        |> Enum.map(fn id -> Task.async(fn -> Rafty.status(id) end) end)
+        |> Enum.map(fn task -> Task.await(task) end)
+        |> Enum.filter(fn resp ->
+          case resp do
+            {:error, _msg} -> false
+            _ -> true
+          end
+        end)
+        |> Enum.map(fn {_server_state, commit_index, _applied_index} -> commit_index end)
+
+      index = cluster_config |> length |> div(2)
+      commit_index = Enum.at(commit_indexes, index)
+      if log_index <= commit_index,
+        do: {nil, true},
+        else: {nil, false}
+    end)
+  end
 end
