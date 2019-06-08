@@ -22,3 +22,6 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 rafty-*.tar
 
+# Ignore Dialzyer outputs.
+/priv/plts/*.plt
+/priv/plts/*.plt.hash

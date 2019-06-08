@@ -29,6 +29,7 @@ defmodule Rafty.MixProject do
         "coveralls.json": :test
       ],
       dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
         plt_add_deps: :transitive
       ]
     ]
