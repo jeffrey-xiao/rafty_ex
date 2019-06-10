@@ -406,7 +406,7 @@ defmodule Rafty.Server do
           do: nil,
           else: Log.Server.get_entry(state.id, prev_log_index).term_index
 
-      entries = Log.Server.get_tail(state.id, state.next_index[neighbour])
+      entries = Log.Server.get_entries(state.id, state.next_index[neighbour])
 
       RPC.send_rpc(%RPC.AppendEntriesRequest{
         from: state.id,
@@ -448,7 +448,7 @@ defmodule Rafty.Server do
 
       {fsm_state, execute_requests} =
         state.id
-        |> Log.Server.get_tail(state.last_applied + 1)
+        |> Log.Server.get_entries(state.last_applied + 1)
         |> Enum.take(entry_count)
         |> Enum.with_index()
         |> Enum.reduce({state.fsm_state, state.execute_requests}, fn {entry, index},

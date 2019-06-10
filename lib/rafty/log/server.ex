@@ -60,9 +60,9 @@ defmodule Rafty.Log.Server do
     GenServer.call({name(server_name), node_name}, {:get_entry, index})
   end
 
-  @spec get_tail(Rafty.id(), non_neg_integer()) :: [Rafty.Log.Entry.t()]
-  def get_tail({server_name, node_name}, index) do
-    GenServer.call({name(server_name), node_name}, {:get_tail, index})
+  @spec get_entries(Rafty.id(), non_neg_integer()) :: [Rafty.Log.Entry.t()]
+  def get_entries({server_name, node_name}, index) do
+    GenServer.call({name(server_name), node_name}, {:get_entries, index})
   end
 
   @spec append_entries(Rafty.id(), [Rafty.Log.Entry.t()], non_neg_integer()) :: :ok
@@ -91,8 +91,8 @@ defmodule Rafty.Log.Server do
   end
 
   @impl GenServer
-  def handle_call({:get_tail, index}, _from, state) do
-    {:reply, state.log.get_tail(state.log_state, index), state}
+  def handle_call({:get_entries, index}, _from, state) do
+    {:reply, state.log.get_entries(state.log_state, index), state}
   end
 
   @impl GenServer

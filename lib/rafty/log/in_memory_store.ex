@@ -43,7 +43,7 @@ defmodule Rafty.Log.InMemoryStore do
   end
 
   @impl Store
-  def get_tail(state, index) do
+  def get_entries(state, index) do
     {_head, tail} = Enum.split(state.entries, index - 1)
     tail
   end
