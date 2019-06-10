@@ -4,12 +4,12 @@ defmodule Rafty.MixProject do
   @github_url "https://github.com/jeffrey-xiao/rafty_ex"
   @gitlab_url "https://gitlab.com/jeffrey-xiao/rafty_ex"
 
-  def project() do
+  def project do
     [
       app: :rafty,
       version: "0.1.0",
       description: "An implementation of the Raft consensus algorithm.",
-      elixir: "~> 1.8",
+      elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -35,7 +35,7 @@ defmodule Rafty.MixProject do
     ]
   end
 
-  def application() do
+  def application do
     [
       mod: {Rafty, []},
       extra_applications: [:logger]
@@ -49,7 +49,7 @@ defmodule Rafty.MixProject do
     end
   end
 
-  defp deps() do
+  defp deps do
     [
       {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false},
@@ -58,7 +58,7 @@ defmodule Rafty.MixProject do
     ]
   end
 
-  defp package() do
+  defp package do
     [
       files: ["lib", "LICENSE-APACHE", "LICENSE-MIT", "mix.exs", "README.md"],
       licenses: ["Apache 2.0", "MIT"],

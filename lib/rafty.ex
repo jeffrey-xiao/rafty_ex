@@ -40,7 +40,7 @@ defmodule Rafty do
 
   @spec query(id(), term(), timeout()) :: term() | catch_exit_error()
   def query(id, payload, timeout \\ 5000) do
-    nil
+    catch_exit(fn -> GenServer.call(id, {:execute, payload}, timeout) end)
   end
 
   @spec status(server_name(), timeout()) ::

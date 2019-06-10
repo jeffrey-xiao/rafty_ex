@@ -39,7 +39,7 @@ defmodule Rafty.Log.InMemoryStore do
 
   @impl Store
   def get_entry(state, index) do
-    Enum.at(state.entries, index - 1)
+    if index == 0, do: nil, else: Enum.at(state.entries, index - 1)
   end
 
   @impl Store

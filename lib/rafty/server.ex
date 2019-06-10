@@ -57,12 +57,17 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
-  def handle_call({:execute, _payload}, _from, _state), do: :error
+  def handle_call({:execute, _payload}, from, state),
+    do: {:reply, {:error, :not_leader, state.leader}}
 
   @impl GenServer
-  def handle_call(:query, from, state) do
+  def handle_call({:query, _payload}, from, %State{server_state: :leader} = state) do
     {:reply, nil, state}
   end
+
+  @impl GenServer
+  def handle_call({:query, _payload}, from, state),
+    do: {:reply, {:error, :not_leader, state.leader}}
 
   @impl GenServer
   def handle_call(:status, _from, state) do
@@ -355,9 +360,24 @@ defmodule Rafty.Server do
   defp convert_to_leader(state) do
     Logger.info("#{inspect(state.id)}: Converting to leader")
 
-    log_length = Log.Server.length(state.id)
-    Log.Server.set_voted_for(state.id, nil)
     Enum.each(state.leader_requests, fn client -> GenServer.reply(client, state.id) end)
+
+    log_length = Log.Server.length(state.id)
+    term_index = Log.Server.get_term_index(state.id)
+
+    Log.Server.append_entries(
+      state.id,
+      [
+        %Log.Entry{
+          term_index: term_index,
+          command: :no_op,
+          payload: nil
+        }
+      ],
+      log_length
+    )
+
+    Log.Server.set_voted_for(state.id, nil)
 
     %State{
       state
@@ -367,7 +387,9 @@ defmodule Rafty.Server do
         next_index:
           state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
         match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
-        votes: MapSet.new()
+        votes: MapSet.new(),
+        leader_requests: [],
+        execute_requests: []
     }
     |> reset_heartbeat_timer()
   end
