@@ -29,6 +29,34 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
+  def handle_call(:register, from, %State{server_state: :leader} = state) do
+    term_index = Log.Server.get_term_index(state.id)
+    log_index = Log.Server.length(state.id)
+
+    Log.Server.append_entries(
+      state.id,
+      [
+        %Log.Entry{
+          term_index: term_index,
+          command: :register,
+          payload: nil
+        }
+      ],
+      log_index
+    )
+
+    broadcast_append_entries(state)
+
+    {:noreply,
+     %State{
+       state
+       | requests: [{from, log_index + 1} | state.requests],
+         match_index: Map.put(state.match_index, state.id, log_index + 1)
+     }
+     |> advance_commit()}
+  end
+
+  @impl GenServer
   def handle_call({:execute, payload}, from, %State{server_state: :leader} = state) do
     term_index = Log.Server.get_term_index(state.id)
     log_index = Log.Server.length(state.id)
@@ -38,7 +66,7 @@ defmodule Rafty.Server do
       [
         %Log.Entry{
           term_index: term_index,
-          command: :user,
+          command: :execute,
           payload: payload
         }
       ],
@@ -50,7 +78,7 @@ defmodule Rafty.Server do
     {:noreply,
      %State{
        state
-       | execute_requests: [{from, log_index + 1} | state.execute_requests],
+       | requests: [{from, log_index + 1} | state.requests],
          match_index: Map.put(state.match_index, state.id, log_index + 1)
      }
      |> advance_commit()}
@@ -389,7 +417,7 @@ defmodule Rafty.Server do
         match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
         votes: MapSet.new(),
         leader_requests: [],
-        execute_requests: []
+        requests: []
     }
     |> reset_heartbeat_timer()
   end
@@ -446,24 +474,22 @@ defmodule Rafty.Server do
     if state.commit_index > state.last_applied do
       entry_count = state.commit_index - state.last_applied
 
-      {fsm_state, execute_requests} =
+      {fsm_state, requests} =
         state.id
         |> Log.Server.get_entries(state.last_applied + 1)
         |> Enum.take(entry_count)
         |> Enum.with_index()
-        |> Enum.reduce({state.fsm_state, state.execute_requests}, fn {entry, index},
-                                                                     {fsm_state, execute_requests} =
-                                                                       acc ->
-          if entry.command == :user do
-            {resp, fsm_state} = state.fsm.execute(fsm_state, entry.payload)
+        |> Enum.reduce({state.fsm_state, state.requests}, fn {entry, index},
+                                                             {fsm_state, requests} = acc ->
+          {resp, fsm_state} =
+            case entry.command do
+              :execute -> state.fsm.execute(fsm_state, entry.payload)
+              :register -> {index + state.last_applied + 1, fsm_state}
+              _ -> {nil, fsm_state}
+            end
 
-            execute_requests =
-              respond_to_execute_requests(execute_requests, index + state.last_applied + 1, resp)
-
-            {fsm_state, execute_requests}
-          else
-            acc
-          end
+          requests = respond_to_requests(requests, index + state.last_applied + 1, resp)
+          {fsm_state, requests}
         end)
 
       Logger.info(
@@ -474,24 +500,24 @@ defmodule Rafty.Server do
         state
         | last_applied: state.commit_index,
           fsm_state: fsm_state,
-          execute_requests: execute_requests
+          requests: requests
       }
     else
       state
     end
   end
 
-  @spec respond_to_execute_requests(
+  @spec respond_to_requests(
           [{GenServer.from(), non_neg_integer()}],
           non_neg_integer(),
           term()
         ) :: [{GenServer.from(), non_neg_integer()}]
-  defp respond_to_execute_requests([], _applied_log_index, _resp), do: []
+  defp respond_to_requests([], _applied_log_index, _resp), do: []
 
-  defp respond_to_execute_requests([{from, log_index} | tail] = reqs, applied_log_index, resp) do
+  defp respond_to_requests([{from, log_index} | tail] = reqs, applied_log_index, resp) do
     cond do
       log_index < applied_log_index ->
-        respond_to_execute_requests(tail, applied_log_index, resp)
+        respond_to_requests(tail, applied_log_index, resp)
 
       log_index == applied_log_index ->
         GenServer.reply(from, resp)

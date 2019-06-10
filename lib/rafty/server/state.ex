@@ -15,7 +15,7 @@ defmodule Rafty.Server.State do
           votes: MapSet.t(Rafty.id()),
           election_timer: Timer.t(),
           leader_requests: [GenServer.from()],
-          execute_requests: [{GenServer.from(), non_neg_integer()}]
+          requests: [{GenServer.from(), non_neg_integer()}]
         }
   defstruct id: nil,
             server_state: :follower,
@@ -35,5 +35,5 @@ defmodule Rafty.Server.State do
             election_timer: Timer.new(:election_timeout),
             # Client requests
             leader_requests: [],
-            execute_requests: []
+            requests: []
 end

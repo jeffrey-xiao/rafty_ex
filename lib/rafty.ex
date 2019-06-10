@@ -33,6 +33,11 @@ defmodule Rafty do
     Rafty.ServersSupervisor.terminate_server(id)
   end
 
+  @spec register(id(), timeout()) :: non_neg_integer()
+  def register(id, timeout \\ 5000) do
+    catch_exit(fn -> GenServer.call(id, :register, timeout) end)
+  end
+
   @spec execute(id(), term(), timeout()) :: term() | catch_exit_error()
   def execute(id, payload, timeout \\ 5000) do
     catch_exit(fn -> GenServer.call(id, {:execute, payload}, timeout) end)

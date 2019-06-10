@@ -35,6 +35,14 @@ defmodule RaftyTest do
     |> Enum.each(fn id -> assert Rafty.leader(id) == leader end)
   end
 
+  test "simple registration" do
+    leader = Cluster.wait_for_leader(cluster_config)
+    assert leader != :timeout
+
+    2 = Rafty.register(leader)
+    3 = Rafty.register(leader)
+  end
+
   test "simple state", %{cluster_config: cluster_config} do
     leader = Cluster.wait_for_leader(cluster_config)
     assert leader != :timeout
