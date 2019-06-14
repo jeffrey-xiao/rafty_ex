@@ -43,7 +43,7 @@ defmodule RaftyTest.Util.Cluster do
             _ -> true
           end
         end)
-        |> Enum.map(fn {_server_state, commit_index, _applied_index} -> commit_index end)
+        |> Enum.map(fn {_server_state, _term_index, _commit_index, applied_index} -> applied_index end)
 
       index = cluster_config |> length |> div(2)
       commit_index = Enum.at(commit_indexes, index)

@@ -15,6 +15,7 @@ defmodule Rafty.Server.Supervisor do
   def init(args) do
     children = [
       {Rafty.Log.Server, args},
+      {Rafty.FSM.Server, args},
       {Rafty.Server, args}
     ]
 

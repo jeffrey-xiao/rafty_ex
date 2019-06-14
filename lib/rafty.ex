@@ -12,15 +12,17 @@ defmodule Rafty do
           fsm: atom(),
           log: atom()
         }
-  @type catch_exit_error() :: {:error, :noproc | :timeout}
-  @type rpc() ::
+  @type catch_exit_error :: {:error, :noproc | :timeout}
+  @type catch_exit_ref_error :: {:error, :noproc}, {:error, :timeout, reference()}
+  @type rpc ::
           Rafty.RPC.AppendEntriesRequest.t()
           | Rafty.RPC.AppendEntriesResponse.t()
           | Rafty.RPC.RequestVoteRequest.t()
           | Rafty.RPC.RequestVoteResponse.t()
-  @type log_index() :: non_neg_integer()
-  @type term_index() :: non_neg_integer()
-  @type client_id() :: non_neg_integer()
+  @type log_index :: non_neg_integer()
+  @type term_index :: non_neg_integer()
+  @type client_id :: non_neg_integer()
+  @type timestamp :: integer()
 
   @impl Application
   def start(_type, _args) do
@@ -42,23 +44,24 @@ defmodule Rafty do
     catch_exit(fn -> GenServer.call(id, :register, timeout) end)
   end
 
-  @spec execute(id(), term(), timeout()) :: term() | catch_exit_error()
-  def execute(id, payload, timeout \\ 5000) do
-    catch_exit(fn -> GenServer.call(id, {:execute, payload}, timeout) end)
+  @spec execute(id(), client_id(), reference(), term(), timeout()) ::
+          term() | {:not_leader, Rafty.id()} | catch_exit_error()
+  def execute(id, client_id, ref \\ make_ref(), payload, timeout \\ 5000) do
+    catch_exit_ref(fn -> GenServer.call(id, {:execute, client_id, ref, payload}, timeout) end, ref)
   end
 
-  @spec query(id(), term(), timeout()) :: term() | catch_exit_error()
+  @spec query(id(), term(), timeout()) :: term() | {:not_leader, Rafty.id()} | catch_exit_error()
   def query(id, payload, timeout \\ 5000) do
-    catch_exit(fn -> GenServer.call(id, {:execute, payload}, timeout) end)
+    catch_exit(fn -> GenServer.call(id, {:query, payload}, timeout) end)
   end
 
-  @spec status(server_name(), timeout()) ::
+  @spec status(id(), timeout()) ::
           {server_state(), term_index(), log_index(), log_index()} | catch_exit_error()
   def status(id, timeout \\ 5000) do
     catch_exit(fn -> GenServer.call(id, :status, timeout) end)
   end
 
-  @spec leader(id(), timeout()) :: id() | nil | catch_exit_error()
+  @spec leader(id(), timeout()) :: Rafty.id() | catch_exit_error()
   def leader(id, timeout \\ 5000) do
     catch_exit(fn -> GenServer.call(id, :leader, timeout) end)
   end
@@ -69,5 +72,13 @@ defmodule Rafty do
   catch
     :exit, {msg, _} when msg in [:noproc, :normal] -> {:error, :noproc}
     :exit, {:timeout, _} -> {:error, :timeout}
+  end
+
+  @spec catch_exit_ref((() -> ret), reference()) :: ret when ret: term() | catch_exit_ref_error()
+  def catch_exit_ref(func, ref) do
+    func.()
+  catch
+    :exit, {msg, _} when msg in [:noproc, :normal] -> {:error, :noproc}
+    :exit, {:timeout, _} -> {:error, :timeout, ref}
   end
 end

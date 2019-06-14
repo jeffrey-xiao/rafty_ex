@@ -8,7 +8,7 @@ defmodule Rafty.Timer do
     :ref
   ]
 
-  @spec new(atom) :: t()
+  @spec new(atom()) :: t()
   def new(command) do
     %__MODULE__{
       command: command,

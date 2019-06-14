@@ -1,5 +1,5 @@
 defmodule Rafty.FSM do
-  @callback init :: any()
-  @callback execute(any(), any()) :: {any(), any()}
-  @callback query(any(), any()) :: any()
+  @callback init :: term()
+  @callback execute(term(), term()) :: {term(), term()}
+  @callback query(term(), term()) :: term()
 end

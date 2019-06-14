@@ -2,6 +2,7 @@ defmodule Rafty.Log.Server do
   use GenServer
 
   @type t :: %__MODULE__{log: module(), log_state: term()}
+  @enforce_keys [:log, :log_state]
   defstruct [
     :log,
     :log_state
@@ -14,7 +15,7 @@ defmodule Rafty.Log.Server do
 
   @spec name(Rafty.server_name()) :: atom()
   def name(server_name) do
-    :"LogServer_#{server_name}"
+    :"Log.Server.#{server_name}"
   end
 
   @spec get_term_index(Rafty.id()) :: Rafty.term_index()

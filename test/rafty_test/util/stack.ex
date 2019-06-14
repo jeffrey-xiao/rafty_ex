@@ -10,8 +10,8 @@ defmodule RaftyTest.Util.Stack do
   @impl Rafty.FSM
   def execute(state, :pop) do
     case state do
-      [] -> {nil, state}
-      [head | tail] -> {head, tail}
+      [] -> {{:ok, nil}, state}
+      [head | tail] -> {{:ok, head}, tail}
     end
   end
 

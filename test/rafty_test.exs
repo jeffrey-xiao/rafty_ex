@@ -18,7 +18,8 @@ defmodule RaftyTest do
     args = %{
       cluster_config: cluster_config,
       fsm: Stack,
-      log: Log.RocksDBStore
+      log: Log.RocksDBStore,
+      ttl: 10 * 60 * 1000 * 1000 * 1000
     }
 
     File.mkdir!("db")
@@ -36,24 +37,40 @@ defmodule RaftyTest do
 
     cluster_config
     |> Enum.each(fn id -> assert Rafty.leader(id) == leader end)
+
+    nil = Cluster.wait_for_replication(cluster_config, 1)
+    assert Rafty.status(leader) == {:leader, 1, 1, 1}
   end
 
   test "simple registration", %{cluster_config: cluster_config} do
     leader = Cluster.wait_for_leader(cluster_config)
     assert leader != :timeout
 
-    2 = Rafty.register(leader)
-    3 = Rafty.register(leader)
+    {:ok, 2} = Rafty.register(leader)
+    {:ok, 3} = Rafty.register(leader)
   end
 
-  test "simple state", %{cluster_config: cluster_config} do
+  test "simple execution", %{cluster_config: cluster_config} do
     leader = Cluster.wait_for_leader(cluster_config)
     assert leader != :timeout
 
-    :ok = Rafty.execute(leader, {:push, 1})
-    :ok = Rafty.execute(leader, {:push, 2})
-    2 = Rafty.execute(leader, :pop)
-    1 = Rafty.execute(leader, :pop)
+    {:ok, client_id} = Rafty.register(leader)
+    :ok = Rafty.execute(leader, client_id, {:push, 1})
+    :ok = Rafty.execute(leader, client_id, {:push, 2})
+    {:ok, 2} = Rafty.execute(leader, client_id, :pop)
+    {:ok, 1} = Rafty.execute(leader, client_id, :pop)
+  end
+
+  test "cached execution", %{cluster_config: cluster_config} do
+    leader = Cluster.wait_for_leader(cluster_config)
+    assert leader != :timeout
+
+    {:ok, client_id} = Rafty.register(leader)
+    :ok = Rafty.execute(leader, client_id, {:push, 1})
+    ref = make_ref()
+    {:ok, 1} = Rafty.execute(leader, client_id, ref, :pop)
+    {:ok, 1} = Rafty.execute(leader, client_id, ref, :pop)
+    {:ok, nil} = Rafty.execute(leader, client_id, :pop)
   end
 
   test "leader failure", %{cluster_config: cluster_config} do
@@ -84,7 +101,8 @@ defmodule RaftyTest do
       end)
     end)
 
-    :ok = Rafty.execute(leader, {:push, 1})
-    1 = Rafty.execute(leader, :pop)
+    {:ok, client_id} = Rafty.register(leader)
+    :ok = Rafty.execute(leader, client_id, {:push, 1})
+    {:ok, 1} = Rafty.execute(leader, client_id, :pop)
   end
 end

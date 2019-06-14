@@ -1,20 +1,19 @@
 defmodule Rafty.Server do
   require Logger
   use GenServer
-  alias Rafty.{Log, RPC, Timer}
+  alias Rafty.{Log, FSM, RPC, Timer}
 
   @election_timeout_low 250
   @election_timeout_high 500
   @heartbeat_timeout 100
 
   @type t :: %__MODULE__{
+          id: Rafty.id(),
           server_state: Rafty.server_state(),
           cluster_config: [Rafty.id()],
           leader: Rafty.id() | nil,
           commit_index: Rafty.log_index(),
           last_applied: Rafty.log_index(),
-          fsm: module(),
-          fsm_state: term(),
           next_index: %{atom() => Rafty.log_index()},
           match_index: %{atom() => Rafty.log_index()},
           heartbeat_timer: Timer.t(),
@@ -29,9 +28,6 @@ defmodule Rafty.Server do
             leader: nil,
             commit_index: 0,
             last_applied: 0,
-            # Finite state machine specific state.
-            fsm: nil,
-            fsm_state: nil,
             # Leader specific state.
             next_index: %{},
             match_index: %{},
@@ -56,9 +52,7 @@ defmodule Rafty.Server do
     {:ok,
      %__MODULE__{
        id: {args[:server_name], args[:node_name]},
-       cluster_config: args[:cluster_config],
-       fsm: args[:fsm],
-       fsm_state: args[:fsm].init()
+       cluster_config: args[:cluster_config]
      }
      |> convert_to_follower()
      |> reset_election_timer()}
@@ -73,10 +67,10 @@ defmodule Rafty.Server do
       state.id,
       [
         %Log.Entry{
+          timestamp: :erlang.monotonic_time(:nanosecond),
           term_index: term_index,
           command: :register,
-          payload: nil,
-          timestamp: :erlang.monotonic_time()
+          payload: nil
         }
       ],
       log_index
@@ -94,7 +88,11 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
-  def handle_call({:execute, payload}, from, %__MODULE__{server_state: :leader} = state) do
+  def handle_call(
+        {:execute, client_id, ref, payload},
+        from,
+        %__MODULE__{server_state: :leader} = state
+      ) do
     term_index = Log.Server.get_term_index(state.id)
     log_index = Log.Server.length(state.id)
 
@@ -102,10 +100,12 @@ defmodule Rafty.Server do
       state.id,
       [
         %Log.Entry{
+          client_id: client_id,
+          ref: ref,
+          timestamp: :erlang.monotonic_time(:nanosecond),
           term_index: term_index,
           command: :execute,
-          payload: payload,
-          timestamp: :erlang.monotonic_time()
+          payload: payload
         }
       ],
       log_index
@@ -124,7 +124,7 @@ defmodule Rafty.Server do
 
   @impl GenServer
   def handle_call({:execute, _payload}, from, state),
-    do: {:reply, {:error, :not_leader, state.leader}}
+    do: {:reply, {:not_leader, state.leader}}
 
   @impl GenServer
   def handle_call({:query, _payload}, from, %__MODULE__{server_state: :leader} = state) do
@@ -133,7 +133,7 @@ defmodule Rafty.Server do
 
   @impl GenServer
   def handle_call({:query, _payload}, from, state),
-    do: {:reply, {:error, :not_leader, state.leader}}
+    do: {:reply, {:not_leader, state.leader}}
 
   @impl GenServer
   def handle_call(:status, _from, state) do
@@ -437,8 +437,7 @@ defmodule Rafty.Server do
         %Log.Entry{
           term_index: term_index,
           command: :no_op,
-          payload: nil,
-          timestamp: :erlang.monotonic_time()
+          payload: nil
         }
       ],
       log_length
@@ -512,22 +511,26 @@ defmodule Rafty.Server do
     if state.commit_index > state.last_applied do
       entry_count = state.commit_index - state.last_applied
 
-      {fsm_state, requests} =
+      requests =
         state.id
         |> Log.Server.get_entries(state.last_applied + 1)
         |> Enum.take(entry_count)
         |> Enum.with_index(state.last_applied + 1)
-        |> Enum.reduce({state.fsm_state, state.requests}, fn {entry, index},
-                                                             {fsm_state, requests} ->
-          {resp, fsm_state} =
+        |> Enum.reduce(state.requests, fn {entry, index}, requests ->
+          resp =
             case entry.command do
-              :execute -> state.fsm.execute(fsm_state, entry.payload)
-              :register -> {index, fsm_state}
-              _ -> {nil, fsm_state}
+              :execute ->
+                FSM.Server.execute(state.id, entry.client_id, entry.ref, entry.timestamp, entry.payload)
+
+              :register ->
+                FSM.Server.register(state.id, index, entry.timestamp)
+
+              _ ->
+                nil
             end
 
-          requests = respond_to_requests(requests, index, resp)
-          {fsm_state, requests}
+          respond_to_requests(requests, index, resp)
+          requests
         end)
 
       Logger.info(
@@ -537,7 +540,6 @@ defmodule Rafty.Server do
       %__MODULE__{
         state
         | last_applied: state.commit_index,
-          fsm_state: fsm_state,
           requests: requests
       }
     else
