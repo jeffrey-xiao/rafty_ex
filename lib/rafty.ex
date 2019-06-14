@@ -13,7 +13,7 @@ defmodule Rafty do
           log: atom()
         }
   @type catch_exit_error :: {:error, :noproc | :timeout}
-  @type catch_exit_ref_error :: {:error, :noproc}, {:error, :timeout, reference()}
+  @type(catch_exit_ref_error :: {:error, :noproc}, {:error, :timeout, reference()})
   @type rpc ::
           Rafty.RPC.AppendEntriesRequest.t()
           | Rafty.RPC.AppendEntriesResponse.t()
@@ -47,7 +47,10 @@ defmodule Rafty do
   @spec execute(id(), client_id(), reference(), term(), timeout()) ::
           term() | {:not_leader, Rafty.id()} | catch_exit_error()
   def execute(id, client_id, ref \\ make_ref(), payload, timeout \\ 5000) do
-    catch_exit_ref(fn -> GenServer.call(id, {:execute, client_id, ref, payload}, timeout) end, ref)
+    catch_exit_ref(
+      fn -> GenServer.call(id, {:execute, client_id, ref, payload}, timeout) end,
+      ref
+    )
   end
 
   @spec query(id(), term(), timeout()) :: term() | {:not_leader, Rafty.id()} | catch_exit_error()

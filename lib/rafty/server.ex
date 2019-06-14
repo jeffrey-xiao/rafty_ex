@@ -520,7 +520,13 @@ defmodule Rafty.Server do
           resp =
             case entry.command do
               :execute ->
-                FSM.Server.execute(state.id, entry.client_id, entry.ref, entry.timestamp, entry.payload)
+                FSM.Server.execute(
+                  state.id,
+                  entry.client_id,
+                  entry.ref,
+                  entry.timestamp,
+                  entry.payload
+                )
 
               :register ->
                 FSM.Server.register(state.id, index, entry.timestamp)
