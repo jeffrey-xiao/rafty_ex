@@ -7,11 +7,11 @@ defmodule Rafty.Log.RocksDBStore do
   @behaviour Store
 
   @type t :: %__MODULE__{
-    db: :rocksdb.db_handle(),
-    path: charlist(),
-    metadata: Metadata.t(),
-    length: non_neg_integer()
-  }
+          db: :rocksdb.db_handle(),
+          path: charlist(),
+          metadata: Metadata.t(),
+          length: non_neg_integer()
+        }
   @enforce_keys [:db, :path, :metadata, :length]
   defstruct [
     :db,
