@@ -1,40 +1,37 @@
 defmodule Rafty.Log.InMemoryStore do
-  alias Rafty.Log.Store
+  alias Rafty.Log.{Metadata, Store}
 
   @behaviour Store
 
   @type t :: %__MODULE__{
-          term_index: non_neg_integer(),
-          voted_for: Rafty.id() | nil,
+          metadata: Metadata.t(),
           entries: [Rafty.Log.Entry.t()]
         }
-  @enforce_keys [:term_index, :voted_for, :entries]
+  @enforce_keys [:metadata, :entries]
   defstruct [
-    :term_index,
-    :voted_for,
+    :metadata,
     :entries
   ]
 
   @impl Store
   def init(_server_name) do
     %__MODULE__{
-      term_index: 0,
-      voted_for: nil,
+      metadata: %Metadata{},
       entries: []
     }
   end
 
   @impl Store
+  def close(_state), do: :ok
+
+  @impl Store
   def get_metadata(state) do
-    %{
-      term_index: state.term_index,
-      voted_for: state.voted_for
-    }
+    state.metadata
   end
 
   @impl Store
   def set_metadata(state, metadata) do
-    struct(state, metadata)
+    %__MODULE__{state | metadata: metadata}
   end
 
   @impl Store

@@ -51,6 +51,7 @@ defmodule Rafty.MixProject do
 
   defp deps do
     [
+      {:rocksdb, "~> 1.0"},
       {:credo, "~> 1.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0.0-rc.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},

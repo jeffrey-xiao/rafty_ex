@@ -4,6 +4,7 @@ defmodule Rafty do
   @type server_name :: atom()
   @type node_name :: atom()
   @type id :: {server_name(), node_name()}
+  @type opt_id :: id() | nil
   @type server_state :: :follower | :candidate | :leader
   @type args :: %{
           server_name: server_name(),

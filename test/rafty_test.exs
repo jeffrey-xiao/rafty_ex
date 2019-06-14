@@ -18,8 +18,11 @@ defmodule RaftyTest do
     args = %{
       cluster_config: cluster_config,
       fsm: Stack,
-      log: Log.InMemoryStore
+      log: Log.RocksDBStore
     }
+
+    File.mkdir!("db")
+    on_exit(fn -> File.rm_rf!("db") end)
 
     {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :a))
     {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :b))

@@ -4,7 +4,7 @@ defmodule Rafty.RPC do
   defmodule AppendEntriesRequest do
     @type t :: %__MODULE__{
             from: Rafty.id(),
-            to: Rafty.id() | nil,
+            to: Rafty.opt_id(),
             term_index: non_neg_integer(),
             prev_log_index: non_neg_integer(),
             prev_log_term_index: non_neg_integer() | nil,
@@ -33,7 +33,7 @@ defmodule Rafty.RPC do
   defmodule AppendEntriesResponse do
     @type t :: %__MODULE__{
             from: Rafty.id(),
-            to: Rafty.id() | nil,
+            to: Rafty.opt_id(),
             term_index: non_neg_integer(),
             last_log_index: non_neg_integer(),
             success: bool()
@@ -57,7 +57,7 @@ defmodule Rafty.RPC do
   defmodule RequestVoteRequest do
     @type t :: %__MODULE__{
             from: Rafty.id(),
-            to: Rafty.id() | nil,
+            to: Rafty.opt_id(),
             term_index: non_neg_integer(),
             last_log_index: non_neg_integer(),
             last_log_term_index: non_neg_integer()
@@ -80,7 +80,7 @@ defmodule Rafty.RPC do
   defmodule RequestVoteResponse do
     @type t :: %__MODULE__{
             from: Rafty.id(),
-            to: Rafty.id() | nil,
+            to: Rafty.opt_id(),
             term_index: non_neg_integer(),
             vote_granted: bool()
           }

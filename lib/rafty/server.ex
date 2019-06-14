@@ -411,7 +411,6 @@ defmodule Rafty.Server do
       state
       | server_state: :leader,
         leader: state.id,
-        leader_requests: [],
         next_index:
           state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
         match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
@@ -478,17 +477,17 @@ defmodule Rafty.Server do
         state.id
         |> Log.Server.get_entries(state.last_applied + 1)
         |> Enum.take(entry_count)
-        |> Enum.with_index()
+        |> Enum.with_index(state.last_applied + 1)
         |> Enum.reduce({state.fsm_state, state.requests}, fn {entry, index},
-                                                             {fsm_state, requests} = acc ->
+                                                             {fsm_state, requests} ->
           {resp, fsm_state} =
             case entry.command do
               :execute -> state.fsm.execute(fsm_state, entry.payload)
-              :register -> {index + state.last_applied + 1, fsm_state}
+              :register -> {index, fsm_state}
               _ -> {nil, fsm_state}
             end
 
-          requests = respond_to_requests(requests, index + state.last_applied + 1, resp)
+          requests = respond_to_requests(requests, index, resp)
           {fsm_state, requests}
         end)
 
