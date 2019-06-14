@@ -1,10 +1,11 @@
 defmodule Rafty.Log.RocksDBStore do
-  alias Rafty.Log.{Entry, Metadata, Store}
+  alias Rafty.Log
+  alias Rafty.Log.{Entry, Metadata}
 
   @metadata_key <<"metadata">>
   @db_options [create_if_missing: true]
 
-  @behaviour Store
+  @behaviour Log
 
   @type t :: %__MODULE__{
           db: :rocksdb.db_handle(),
@@ -20,7 +21,7 @@ defmodule Rafty.Log.RocksDBStore do
     :length
   ]
 
-  @impl Store
+  @impl Log
   def init(server_name) do
     path = Path.join("db", Atom.to_string(server_name)) |> to_charlist()
     {:ok, db} = :rocksdb.open(path, @db_options)
@@ -35,21 +36,21 @@ defmodule Rafty.Log.RocksDBStore do
     |> populate_length()
   end
 
-  @impl Store
+  @impl Log
   def close(state) do
     :rocksdb.close(state.path)
   end
 
-  @impl Store
+  @impl Log
   def get_metadata(state), do: state.metadata
 
-  @impl Store
+  @impl Log
   def set_metadata(state, metadata) do
     :ok = :rocksdb.put(state.db, @metadata_key, :erlang.term_to_binary(metadata), [])
     %__MODULE__{state | metadata: metadata}
   end
 
-  @impl Store
+  @impl Log
   def get_entry(state, index) do
     case :rocksdb.get(state.db, :erlang.term_to_binary(index), []) do
       {:ok, res} -> :erlang.binary_to_term(res)
@@ -58,7 +59,7 @@ defmodule Rafty.Log.RocksDBStore do
     end
   end
 
-  @impl Store
+  @impl Log
   def get_entries(state, index) do
     {:ok, iter} = :rocksdb.iterator(state.db, [])
 
@@ -84,7 +85,7 @@ defmodule Rafty.Log.RocksDBStore do
     end
   end
 
-  @impl Store
+  @impl Log
   def append_entries(state, entries, index) do
     length = index + Kernel.length(entries)
     :ok = :rocksdb.delete_range(state.db, :erlang.term_to_binary(index + 1), <<132>>, [])
@@ -99,7 +100,7 @@ defmodule Rafty.Log.RocksDBStore do
     %__MODULE__{state | length: length}
   end
 
-  @impl Store
+  @impl Log
   def length(state), do: state.length
 
   @spec populate_metadata(t()) :: t()

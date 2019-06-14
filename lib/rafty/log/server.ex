@@ -17,12 +17,12 @@ defmodule Rafty.Log.Server do
     :"LogServer_#{server_name}"
   end
 
-  @spec get_term_index(Rafty.id()) :: non_neg_integer()
+  @spec get_term_index(Rafty.id()) :: Rafty.term_index()
   def get_term_index({server_name, node_name}) do
     GenServer.call({name(server_name), node_name}, :get_metadata).term_index
   end
 
-  @spec increment_term_index(Rafty.id()) :: non_neg_integer()
+  @spec increment_term_index(Rafty.id()) :: Rafty.term_index()
   def increment_term_index({server_name, node_name}) do
     metadata = GenServer.call({name(server_name), node_name}, :get_metadata)
 
@@ -34,7 +34,7 @@ defmodule Rafty.Log.Server do
     metadata.term_index + 1
   end
 
-  @spec set_term_index(Rafty.id(), non_neg_integer()) :: :ok
+  @spec set_term_index(Rafty.id(), Rafty.term_index()) :: :ok
   def set_term_index({server_name, node_name}, term_index) do
     metadata = GenServer.call({name(server_name), node_name}, :get_metadata)
 
@@ -55,17 +55,17 @@ defmodule Rafty.Log.Server do
     GenServer.call(name(server_name), {:set_metadata, put_in(metadata.voted_for, voted_for)})
   end
 
-  @spec get_entry(Rafty.id(), non_neg_integer()) :: Rafty.Log.Entry.t() | nil
+  @spec get_entry(Rafty.id(), Rafty.log_index()) :: Rafty.Log.Entry.t() | nil
   def get_entry({server_name, node_name}, index) do
     GenServer.call({name(server_name), node_name}, {:get_entry, index})
   end
 
-  @spec get_entries(Rafty.id(), non_neg_integer()) :: [Rafty.Log.Entry.t()]
+  @spec get_entries(Rafty.id(), Rafty.log_index()) :: [Rafty.Log.Entry.t()]
   def get_entries({server_name, node_name}, index) do
     GenServer.call({name(server_name), node_name}, {:get_entries, index})
   end
 
-  @spec append_entries(Rafty.id(), [Rafty.Log.Entry.t()], non_neg_integer()) :: :ok
+  @spec append_entries(Rafty.id(), [Rafty.Log.Entry.t()], Rafty.log_index()) :: :ok
   def append_entries({server_name, node_name}, entries, index) do
     GenServer.call({name(server_name), node_name}, {:append_entries, entries, index})
   end

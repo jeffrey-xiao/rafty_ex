@@ -11,17 +11,17 @@ defmodule Rafty.Server do
           server_state: Rafty.server_state(),
           cluster_config: [Rafty.id()],
           leader: Rafty.id() | nil,
-          commit_index: non_neg_integer(),
-          last_applied: non_neg_integer(),
+          commit_index: Rafty.log_index(),
+          last_applied: Rafty.log_index(),
           fsm: module(),
           fsm_state: term(),
-          next_index: %{atom() => non_neg_integer()},
-          match_index: %{atom() => non_neg_integer()},
+          next_index: %{atom() => Rafty.log_index()},
+          match_index: %{atom() => Rafty.log_index()},
           heartbeat_timer: Timer.t(),
           votes: MapSet.t(Rafty.id()),
           election_timer: Timer.t(),
           leader_requests: [GenServer.from()],
-          requests: [{GenServer.from(), non_neg_integer()}]
+          requests: [{GenServer.from(), Rafty.log_index()}]
         }
   defstruct id: nil,
             server_state: :follower,
@@ -75,7 +75,8 @@ defmodule Rafty.Server do
         %Log.Entry{
           term_index: term_index,
           command: :register,
-          payload: nil
+          payload: nil,
+          timestamp: :erlang.monotonic_time()
         }
       ],
       log_index
@@ -103,7 +104,8 @@ defmodule Rafty.Server do
         %Log.Entry{
           term_index: term_index,
           command: :execute,
-          payload: payload
+          payload: payload,
+          timestamp: :erlang.monotonic_time()
         }
       ],
       log_index
@@ -435,7 +437,8 @@ defmodule Rafty.Server do
         %Log.Entry{
           term_index: term_index,
           command: :no_op,
-          payload: nil
+          payload: nil,
+          timestamp: :erlang.monotonic_time()
         }
       ],
       log_length
@@ -543,10 +546,10 @@ defmodule Rafty.Server do
   end
 
   @spec respond_to_requests(
-          [{GenServer.from(), non_neg_integer()}],
-          non_neg_integer(),
+          [{GenServer.from(), Rafty.log_index()}],
+          Rafty.log_index(),
           term()
-        ) :: [{GenServer.from(), non_neg_integer()}]
+        ) :: [{GenServer.from(), Rafty.log_index()}]
   defp respond_to_requests([], _applied_log_index, _resp), do: []
 
   defp respond_to_requests([{from, log_index} | tail] = reqs, applied_log_index, resp) do

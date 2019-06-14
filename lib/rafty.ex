@@ -18,6 +18,9 @@ defmodule Rafty do
           | Rafty.RPC.AppendEntriesResponse.t()
           | Rafty.RPC.RequestVoteRequest.t()
           | Rafty.RPC.RequestVoteResponse.t()
+  @type log_index() :: non_neg_integer()
+  @type term_index() :: non_neg_integer()
+  @type client_id() :: non_neg_integer()
 
   @impl Application
   def start(_type, _args) do
@@ -34,7 +37,7 @@ defmodule Rafty do
     Rafty.ServersSupervisor.terminate_server(id)
   end
 
-  @spec register(id(), timeout()) :: non_neg_integer()
+  @spec register(id(), timeout()) :: client_id()
   def register(id, timeout \\ 5000) do
     catch_exit(fn -> GenServer.call(id, :register, timeout) end)
   end
@@ -50,7 +53,7 @@ defmodule Rafty do
   end
 
   @spec status(server_name(), timeout()) ::
-          {id(), non_neg_integer(), non_neg_integer()} | catch_exit_error()
+          {server_state(), term_index(), log_index(), log_index()} | catch_exit_error()
   def status(id, timeout \\ 5000) do
     catch_exit(fn -> GenServer.call(id, :status, timeout) end)
   end

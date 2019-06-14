@@ -5,11 +5,11 @@ defmodule Rafty.RPC do
     @type t :: %__MODULE__{
             from: Rafty.id(),
             to: Rafty.opt_id(),
-            term_index: non_neg_integer(),
-            prev_log_index: non_neg_integer(),
-            prev_log_term_index: non_neg_integer() | nil,
+            term_index: Rafty.term_index(),
+            prev_log_index: Rafty.log_index(),
+            prev_log_term_index: Rafty.log_index() | nil,
             entries: [Rafty.Log.Entry.t()],
-            leader_commit_index: non_neg_integer()
+            leader_commit_index: Rafty.log_index()
           }
     @enforce_keys [
       :from,
@@ -34,8 +34,8 @@ defmodule Rafty.RPC do
     @type t :: %__MODULE__{
             from: Rafty.id(),
             to: Rafty.opt_id(),
-            term_index: non_neg_integer(),
-            last_log_index: non_neg_integer(),
+            term_index: Rafty.term_index(),
+            last_log_index: Rafty.log_index(),
             success: bool()
           }
     @enforce_keys [
@@ -58,9 +58,9 @@ defmodule Rafty.RPC do
     @type t :: %__MODULE__{
             from: Rafty.id(),
             to: Rafty.opt_id(),
-            term_index: non_neg_integer(),
-            last_log_index: non_neg_integer(),
-            last_log_term_index: non_neg_integer()
+            term_index: Rafty.term_index(),
+            last_log_index: Rafty.log_index(),
+            last_log_term_index: Rafty.term_index()
           }
     @enforce_keys [
       :from,
@@ -81,7 +81,7 @@ defmodule Rafty.RPC do
     @type t :: %__MODULE__{
             from: Rafty.id(),
             to: Rafty.opt_id(),
-            term_index: non_neg_integer(),
+            term_index: Rafty.term_index(),
             vote_granted: bool()
           }
     @enforce_keys [

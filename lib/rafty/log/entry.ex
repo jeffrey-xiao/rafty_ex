@@ -1,9 +1,10 @@
 defmodule Rafty.Log.Entry do
-  @type t :: %__MODULE__{term_index: non_neg_integer(), command: term(), payload: term()}
-  @enforce_keys [:term_index, :command, :payload]
+  @type t :: %__MODULE__{term_index: Rafty.term_index(), command: term(), payload: term(), timestamp: non_neg_integer()}
+  @enforce_keys [:term_index, :command, :payload, :timestamp]
   defstruct [
     :term_index,
     :command,
-    :payload
+    :payload,
+    :timestamp
   ]
 end

@@ -17,7 +17,7 @@ defmodule Rafty.Timer do
     }
   end
 
-  @spec reset(t(), non_neg_integer()) :: t()
+  @spec reset(t(), timeout()) :: t()
   def reset(timer, timeout) do
     timer = stop(timer)
     ref = make_ref()

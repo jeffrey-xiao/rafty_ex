@@ -1,7 +1,8 @@
 defmodule Rafty.Log.InMemoryStore do
-  alias Rafty.Log.{Metadata, Store}
+  alias Rafty.Log
+  alias Rafty.Log.Metadata
 
-  @behaviour Store
+  @behaviour Log
 
   @type t :: %__MODULE__{
           metadata: Metadata.t(),
@@ -13,7 +14,7 @@ defmodule Rafty.Log.InMemoryStore do
     :entries
   ]
 
-  @impl Store
+  @impl Log
   def init(_server_name) do
     %__MODULE__{
       metadata: %Metadata{},
@@ -21,37 +22,37 @@ defmodule Rafty.Log.InMemoryStore do
     }
   end
 
-  @impl Store
+  @impl Log
   def close(_state), do: :ok
 
-  @impl Store
+  @impl Log
   def get_metadata(state) do
     state.metadata
   end
 
-  @impl Store
+  @impl Log
   def set_metadata(state, metadata) do
     %__MODULE__{state | metadata: metadata}
   end
 
-  @impl Store
+  @impl Log
   def get_entry(state, index) do
     if index == 0, do: nil, else: Enum.at(state.entries, index - 1)
   end
 
-  @impl Store
+  @impl Log
   def get_entries(state, index) do
     {_head, tail} = Enum.split(state.entries, index - 1)
     tail
   end
 
-  @impl Store
+  @impl Log
   def append_entries(state, entries, index) do
     {head, _tail} = Enum.split(state.entries, index)
     %__MODULE__{state | entries: head ++ entries}
   end
 
-  @impl Store
+  @impl Log
   def length(state) do
     Kernel.length(state.entries)
   end
