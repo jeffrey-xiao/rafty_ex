@@ -1,11 +1,18 @@
 defmodule Rafty.Log.RocksDBStore do
-  alias Rafty.Log.{Metadata, Store}
+  alias Rafty.Log.{Entry, Metadata, Store}
 
   @metadata_key <<"metadata">>
   @db_options [create_if_missing: true]
 
   @behaviour Store
 
+  @type t :: %__MODULE__{
+    db: :rocksdb.db_handle(),
+    path: charlist(),
+    metadata: Metadata.t(),
+    length: non_neg_integer()
+  }
+  @enforce_keys [:db, :path, :metadata, :length]
   defstruct [
     :db,
     :path,
@@ -65,6 +72,7 @@ defmodule Rafty.Log.RocksDBStore do
     end
   end
 
+  @spec get_entries_impl([Entry.t()], :rocksdb.itr_handle()) :: [Entry.t()]
   defp get_entries_impl(entries, iter) do
     case :rocksdb.iterator_move(iter, :next) do
       {:ok, _key, value} ->
@@ -94,6 +102,7 @@ defmodule Rafty.Log.RocksDBStore do
   @impl Store
   def length(state), do: state.length
 
+  @spec populate_metadata(t()) :: t()
   defp populate_metadata(state) do
     case :rocksdb.get(state.db, @metadata_key, []) do
       {:ok, res} ->
@@ -107,6 +116,7 @@ defmodule Rafty.Log.RocksDBStore do
     end
   end
 
+  @spec populate_length(t()) :: t()
   defp populate_length(state) do
     {:ok, iter} = :rocksdb.iterator(state.db, [])
 
@@ -123,10 +133,11 @@ defmodule Rafty.Log.RocksDBStore do
     %__MODULE__{state | length: length}
   end
 
+  @spec populate_length_impl(non_neg_integer(), :rocksdb.itr_handle()) :: non_neg_integer()
   defp populate_length_impl(length, iter) do
     case :rocksdb.iterator_move(iter, :next) do
       {:ok, _key, _value} ->
-        get_entries_impl(length + 1, iter)
+        populate_length_impl(length + 1, iter)
 
       {:error, :invalid_iterator} ->
         :rocksdb.iterator_close(iter)
