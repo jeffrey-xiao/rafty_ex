@@ -57,7 +57,7 @@ defmodule Rafty.Log.RocksDBStore do
 
     case :rocksdb.iterator_move(iter, {:seek, :erlang.term_to_binary(index)}) do
       {:ok, _key, value} ->
-        get_entries_impl([:erlang.binary_to_term(value)], iter) |> Enum.reverse()
+        [:erlang.binary_to_term(value)] |> get_entries_impl(iter) |> Enum.reverse()
 
       {:error, :invalid_iterator} ->
         :rocksdb.iterator_close(iter)
