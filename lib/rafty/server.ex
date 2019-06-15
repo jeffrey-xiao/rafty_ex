@@ -84,7 +84,8 @@ defmodule Rafty.Server do
        | requests: [{from, log_index + 1} | state.requests],
          match_index: Map.put(state.match_index, state.id, log_index + 1)
      }
-     |> advance_commit()}
+     |> advance_commit()
+     |> advance_applied()}
   end
 
   @impl GenServer
@@ -119,7 +120,9 @@ defmodule Rafty.Server do
        | requests: [{from, log_index + 1} | state.requests],
          match_index: Map.put(state.match_index, state.id, log_index + 1)
      }
-     |> advance_commit()}
+     |> reset_heartbeat_timer()
+     |> advance_commit()
+     |> advance_applied()}
   end
 
   @impl GenServer
@@ -219,7 +222,7 @@ defmodule Rafty.Server do
 
   @impl GenServer
   def handle_call(%RPC.RequestVoteRequest{} = rpc, _from, state) do
-    Logger.info("#{inspect(state.id)}: Received request_vote_request")
+    Logger.info("#{inspect(state.id)}: Received request_vote_request: #{inspect(rpc)}")
 
     term_index = Log.Server.get_term_index(state.id)
 
@@ -304,7 +307,7 @@ defmodule Rafty.Server do
 
   @impl GenServer
   def handle_cast(%RPC.RequestVoteResponse{} = rpc, state) do
-    Logger.info("#{inspect(state.id)}: Received request_vote_response")
+    Logger.info("#{inspect(state.id)}: Received request_vote_response: #{inspect(rpc)}")
 
     term_index = Log.Server.get_term_index(state.id)
 

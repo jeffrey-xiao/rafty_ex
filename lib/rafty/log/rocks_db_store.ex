@@ -3,6 +3,7 @@ defmodule Rafty.Log.RocksDBStore do
   alias Rafty.Log.{Entry, Metadata}
 
   @metadata_key <<"metadata">>
+  @max_key <<132>>
   @db_options [create_if_missing: true]
 
   @behaviour Log
@@ -88,7 +89,9 @@ defmodule Rafty.Log.RocksDBStore do
   @impl Log
   def append_entries(state, entries, index) do
     length = index + Kernel.length(entries)
-    :ok = :rocksdb.delete_range(state.db, :erlang.term_to_binary(index + 1), <<132>>, [])
+    old_entries = get_entries(state, index + 1)
+    :ok = :rocksdb.delete_range(state.db, :erlang.term_to_binary(index + 1), @max_key, [])
+    entries = Rafty.Log.merge_logs(old_entries, entries)
 
     entries
     |> Enum.with_index(index + 1)

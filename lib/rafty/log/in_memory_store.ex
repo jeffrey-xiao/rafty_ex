@@ -48,8 +48,8 @@ defmodule Rafty.Log.InMemoryStore do
 
   @impl Log
   def append_entries(state, entries, index) do
-    {head, _tail} = Enum.split(state.entries, index)
-    %__MODULE__{state | entries: head ++ entries}
+    {head, tail} = Enum.split(state.entries, index)
+    %__MODULE__{state | entries: head ++ Rafty.Log.merge_logs(tail, entries)}
   end
 
   @impl Log
