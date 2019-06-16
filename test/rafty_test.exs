@@ -104,6 +104,7 @@ defmodule RaftyTest do
 
     cluster_config
     |> Enum.filter(fn id -> id != leader end)
+    |> Enum.take(1)
     |> Enum.each(fn id -> :ok = Rafty.terminate_server(id) end)
 
     Task.async(fn ->

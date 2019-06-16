@@ -326,12 +326,8 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
-  def handle_info({:election_timeout, _ref}, %__MODULE__{server_state: :leader} = state),
-    do: {:noreply, state}
-
-  @impl GenServer
   def handle_info({:election_timeout, ref}, %__MODULE__{election_timer: %Timer{ref: ref}} = state) do
-    Logger.info("#{inspect(state.id)}: Received election_timeout")
+    Logger.info("#{inspect(state.id)}: Received election timeout")
 
     if state.server_state == :leader do
       if Enum.count(state.active_servers) < quorum(state),
@@ -348,7 +344,7 @@ defmodule Rafty.Server do
         {:heartbeat_timeout, ref},
         %__MODULE__{heartbeat_timer: %Timer{ref: ref}, server_state: :leader} = state
       ) do
-    Logger.info("#{inspect(state.id)}: Received heartbeat_timer")
+    Logger.info("#{inspect(state.id)}: Received heartbeat timeout")
     broadcast_append_entries(state)
     {:noreply, state |> reset_heartbeat_timer()}
   end
@@ -362,8 +358,6 @@ defmodule Rafty.Server do
   end
 
   @spec reset_election_timer(t()) :: t()
-  defp reset_election_timer(%__MODULE__{server_state: :leader} = state), do: state
-
   defp reset_election_timer(state) do
     Logger.info("#{inspect(state.id)}: Refreshing election timer")
 
