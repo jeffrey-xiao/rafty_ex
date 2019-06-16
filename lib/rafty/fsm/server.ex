@@ -37,9 +37,9 @@ defmodule Rafty.FSM.Server do
     GenServer.call({name(server_name), node_name}, {:execute, client_id, ref, timestamp, payload})
   end
 
-  @spec query(Rafty.id(), Rafty.client_id(), Rafty.timestamp(), term()) :: term()
-  def query({server_name, node_name}, client_id, timestamp, payload) do
-    GenServer.call({name(server_name), node_name}, {:query, client_id, timestamp, payload})
+  @spec query(Rafty.id(), term()) :: term()
+  def query({server_name, node_name}, payload) do
+    GenServer.call({name(server_name), node_name}, {:query, payload})
   end
 
   @impl GenServer

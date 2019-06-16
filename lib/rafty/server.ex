@@ -2,6 +2,7 @@ defmodule Rafty.Server do
   require Logger
   use GenServer
   alias Rafty.{FSM, Log, RPC, Timer}
+  alias Rafty.Server.ClientRequest
 
   @election_timeout_low 250
   @election_timeout_high 500
@@ -14,13 +15,14 @@ defmodule Rafty.Server do
           leader: Rafty.id() | nil,
           commit_index: Rafty.log_index(),
           last_applied: Rafty.log_index(),
-          next_index: %{atom() => Rafty.log_index()},
-          match_index: %{atom() => Rafty.log_index()},
+          next_index: %{Rafty.id() => Rafty.log_index()} | nil,
+          match_index: %{Rafty.id() => Rafty.log_index()} | nil,
+          active_servers: MapSet.t(Rafty.id()) | nil,
           heartbeat_timer: Timer.t(),
-          votes: MapSet.t(Rafty.id()),
+          votes: MapSet.t(Rafty.id()) | nil,
           election_timer: Timer.t(),
-          leader_requests: [GenServer.from()],
-          requests: [{GenServer.from(), Rafty.log_index()}]
+          leader_requests: [GenServer.from()] | nil,
+          requests: [ClientRequest.t()] | nil
         }
   defstruct id: nil,
             server_state: :follower,
@@ -81,7 +83,9 @@ defmodule Rafty.Server do
     {:noreply,
      %__MODULE__{
        state
-       | requests: [{from, log_index + 1} | state.requests],
+       | requests: [
+           %ClientRequest{from: from, log_index: log_index + 1, type: :register} | state.requests
+         ],
          match_index: Map.put(state.match_index, state.id, log_index + 1)
      }
      |> advance_commit()
@@ -117,7 +121,9 @@ defmodule Rafty.Server do
     {:noreply,
      %__MODULE__{
        state
-       | requests: [{from, log_index + 1} | state.requests],
+       | requests: [
+           %ClientRequest{from: from, log_index: log_index + 1, type: :execute} | state.requests
+         ],
          match_index: Map.put(state.match_index, state.id, log_index + 1)
      }
      |> reset_heartbeat_timer()
@@ -126,16 +132,27 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
-  def handle_call({:execute, _payload}, from, state),
+  def handle_call({:execute, _payload}, _from, state),
     do: {:reply, {:not_leader, state.leader}}
 
   @impl GenServer
-  def handle_call({:query, _payload}, from, %__MODULE__{server_state: :leader} = state) do
-    {:reply, nil, state}
+  def handle_call({:query, payload}, from, %__MODULE__{server_state: :leader} = state) do
+    log_index = Log.Server.length(state.id)
+    broadcast_append_entries(state)
+
+    {:noreply,
+     %__MODULE__{
+       state
+       | requests: [
+           %ClientRequest{from: from, log_index: log_index, type: :query, payload: payload}
+           | state.requests
+         ]
+     }
+     |> reset_heartbeat_timer()}
   end
 
   @impl GenServer
-  def handle_call({:query, _payload}, from, state),
+  def handle_call({:query, _payload}, _from, state),
     do: {:reply, {:not_leader, state.leader}}
 
   @impl GenServer
@@ -319,7 +336,8 @@ defmodule Rafty.Server do
     if state.server_state == :leader do
       if Enum.count(state.active_servers) < quorum(state),
         do: {:noreply, state |> convert_to_candidate()},
-        else: {:noreply, %{state | active_servers: MapSet.new()} |> reset_election_timer()}
+        else:
+          {:noreply, %{state | active_servers: MapSet.new([state.id])} |> reset_election_timer()}
     else
       {:noreply, state |> convert_to_candidate()}
     end
@@ -355,7 +373,6 @@ defmodule Rafty.Server do
     )
   end
 
-  # TODO: Leader could be disposed if it cannot maintain a quorum.
   @spec reset_heartbeat_timer(t()) :: t()
   defp reset_heartbeat_timer(%__MODULE__{server_state: :leader} = state) do
     Logger.info("#{inspect(state.id)}: Refreshing heartbeat timer")
@@ -461,7 +478,7 @@ defmodule Rafty.Server do
         next_index:
           state.cluster_config |> Enum.map(fn id -> {id, log_length + 1} end) |> Enum.into(%{}),
         match_index: state.cluster_config |> Enum.map(fn id -> {id, 0} end) |> Enum.into(%{}),
-        active_servers: MapSet.new(),
+        active_servers: MapSet.new([state.id]),
         votes: nil,
         leader_requests: [],
         requests: []
@@ -518,68 +535,71 @@ defmodule Rafty.Server do
   @spec advance_applied(t()) :: t()
   defp advance_applied(state) do
     if state.commit_index > state.last_applied do
-      entry_count = state.commit_index - state.last_applied
-
-      requests =
-        state.id
-        |> Log.Server.get_entries(state.last_applied + 1)
-        |> Enum.take(entry_count)
-        |> Enum.with_index(state.last_applied + 1)
-        |> Enum.reduce(state.requests, fn {entry, index}, requests ->
-          resp =
-            case entry.command do
-              :execute ->
-                FSM.Server.execute(
-                  state.id,
-                  entry.client_id,
-                  entry.ref,
-                  entry.timestamp,
-                  entry.payload
-                )
-
-              :register ->
-                FSM.Server.register(state.id, index, entry.timestamp)
-
-              _ ->
-                nil
-            end
-
-          respond_to_requests(requests, index, resp)
-          requests
-        end)
-
       Logger.info(
         "#{inspect(state.id)}: Applied #{state.last_applied + 1} to #{state.commit_index}"
       )
 
-      %__MODULE__{
-        state
-        | last_applied: state.commit_index,
-          requests: requests
-      }
+      entry_count = state.commit_index - state.last_applied
+
+      state.id
+      |> Log.Server.get_entries(state.last_applied + 1)
+      |> Enum.take(entry_count)
+      |> Enum.with_index(state.last_applied + 1)
+      |> Enum.reduce(state, fn {entry, index}, state ->
+        resp =
+          case entry.command do
+            :execute ->
+              FSM.Server.execute(
+                state.id,
+                entry.client_id,
+                entry.ref,
+                entry.timestamp,
+                entry.payload
+              )
+
+            :register ->
+              FSM.Server.register(state.id, index, entry.timestamp)
+
+            _ ->
+              nil
+          end
+
+        %{state | last_applied: index} |> respond_to_requests(resp)
+      end)
     else
-      state
+      respond_to_requests(state, nil)
     end
   end
 
-  @spec respond_to_requests(
-          [{GenServer.from(), Rafty.log_index()}],
-          Rafty.log_index(),
-          term()
-        ) :: [{GenServer.from(), Rafty.log_index()}]
-  defp respond_to_requests([], _applied_log_index, _resp), do: []
+  @spec respond_to_requests(t(), term()) :: t()
+  defp respond_to_requests(%{requests: []} = state, _resp), do: state
 
-  defp respond_to_requests([{from, log_index} | tail] = reqs, applied_log_index, resp) do
+  defp respond_to_requests(state, resp) do
+    [request | tail] = state.requests
+
     cond do
-      log_index < applied_log_index ->
-        respond_to_requests(tail, applied_log_index, resp)
+      request.log_index < state.last_applied ->
+        if request.type == :query,
+          do: GenServer.reply(request.from, FSM.Server.query(state.id, request.payload))
 
-      log_index == applied_log_index ->
-        GenServer.reply(from, resp)
-        tail
+        respond_to_requests(%{state | requests: tail}, resp)
 
-      log_index > applied_log_index ->
-        reqs
+      request.log_index == state.last_applied ->
+        cond do
+          request.type == :query and has_quorum?(state) ->
+            GenServer.reply(request.from, FSM.Server.query(state.id, request.payload))
+            respond_to_requests(%{state | requests: tail}, resp)
+
+          request.type == :query ->
+            state
+
+          true ->
+            GenServer.reply(request.from, resp)
+            respond_to_requests(%{state | requests: tail}, resp)
+        end
+
+      request.log_index > state.last_applied ->
+        state
     end
   end
 
@@ -602,4 +622,7 @@ defmodule Rafty.Server do
 
   @spec quorum(t()) :: pos_integer()
   defp quorum(state), do: (state.cluster_config |> length |> div(2)) + 1
+
+  @spec has_quorum?(t()) :: bool()
+  defp has_quorum?(state), do: Enum.count(state.active_servers) >= quorum(state)
 end

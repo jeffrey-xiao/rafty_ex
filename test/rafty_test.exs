@@ -73,6 +73,21 @@ defmodule RaftyTest do
     {:ok, nil} = Rafty.execute(leader, client_id, :pop)
   end
 
+  test "simple query", %{cluster_config: cluster_config} do
+    leader = Cluster.wait_for_leader(cluster_config)
+    assert leader != :timeout
+
+    {:ok, client_id} = Rafty.register(leader)
+    0 = Rafty.query(leader, :length)
+    0 = Rafty.query(leader, :length)
+    :ok = Rafty.execute(leader, client_id, {:push, 1})
+    1 = Rafty.query(leader, :length)
+    1 = Rafty.query(leader, :length)
+    {:ok, 1} = Rafty.execute(leader, client_id, :pop)
+    0 = Rafty.query(leader, :length)
+    0 = Rafty.query(leader, :length)
+  end
+
   test "leader failure", %{cluster_config: cluster_config} do
     leader = Cluster.wait_for_leader(cluster_config)
     assert leader != :timeout
