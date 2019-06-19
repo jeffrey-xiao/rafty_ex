@@ -1,4 +1,9 @@
 defmodule Rafty.Supervisor do
+  @moduledoc """
+  Supervisor for the Rafty application. It starts `Rafty.RPC.Supervisor` and
+  `Rafty.ServersSupervisor`.
+  """
+
   use Supervisor
 
   @spec start_link :: Supervisor.on_start()

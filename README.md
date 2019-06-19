@@ -11,7 +11,7 @@ and not production use.
 ## References
 
 - [In Search of an Understandable Consensus Algorithm](https://dl.acm.org/citation.cfm?id=2643634.2643666)
-  > Ongaro, Diego, and John Ousterhout. 2014. “In Search of an Understandable Consensus Algorithm.” In _2014 {Usenix} Annual Technical Conference ({Usenix}{ATC} 14)_, 305–19.
+  > Ongaro, Diego, and John Ousterhout. 2014. “In Search of an Understandable Consensus Algorithm.” In *2014 Usenix Annual Technical Conference (Usenix Atc 14)*, 305–19
 - [Consensus: Bridging Theory and Practice](https://web.stanford.edu/~ouster/cgi-bin/papers/OngaroPhD.pdf)
   > Ongaro, Diego. 2014. “Consensus: Bridging Theory and Practice.” PhD thesis, Stanford University.
 

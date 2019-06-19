@@ -340,6 +340,9 @@ defmodule Rafty.Server do
   end
 
   @impl GenServer
+  def handle_info({:election_timeout, _ref}, state), do: {:noreply, state}
+
+  @impl GenServer
   def handle_info(
         {:heartbeat_timeout, ref},
         %__MODULE__{heartbeat_timer: %Timer{ref: ref}, server_state: :leader} = state

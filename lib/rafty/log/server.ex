@@ -1,12 +1,17 @@
 defmodule Rafty.Log.Server do
+  @moduledoc """
+  A server that is the interface to the underlying Raft log.
+  """
+
   use GenServer
 
-  @type t :: %__MODULE__{log: module(), log_state: term()}
   @enforce_keys [:log, :log_state]
   defstruct [
     :log,
     :log_state
   ]
+
+  @type t :: %__MODULE__{log: module(), log_state: term()}
 
   @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
   def start_link(args) do

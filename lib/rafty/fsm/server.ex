@@ -1,14 +1,10 @@
 defmodule Rafty.FSM.Server do
+  @moduledoc """
+  A server that is the interface to the underlying Raft state machine.
+  """
+
   use GenServer
 
-  @typep request_info :: {reference() | nil, term(), Rafty.timestamp()}
-  @typep requests :: %{Rafty.term_index() => request_info()}
-  @type t :: %__MODULE__{
-          fsm: module(),
-          fsm_state: term(),
-          ttl: non_neg_integer(),
-          requests: requests()
-        }
   @enforce_keys [:fsm, :fsm_state, :ttl, :requests]
   defstruct [
     :fsm,
@@ -16,6 +12,15 @@ defmodule Rafty.FSM.Server do
     :ttl,
     :requests
   ]
+
+  @type t :: %__MODULE__{
+          fsm: module(),
+          fsm_state: term(),
+          ttl: non_neg_integer(),
+          requests: requests()
+        }
+  @typep request_info :: {reference() | nil, term(), Rafty.timestamp()}
+  @typep requests :: %{Rafty.term_index() => request_info()}
 
   @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
   def start_link(args) do

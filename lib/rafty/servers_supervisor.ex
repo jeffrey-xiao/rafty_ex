@@ -1,4 +1,8 @@
 defmodule Rafty.ServersSupervisor do
+  @moduledoc """
+  Dynamic supervisor that supervises `Rafty.Server.Supervisor`.
+  """
+
   use DynamicSupervisor
 
   @spec start_link(Rafty.args()) :: Supervisor.on_start()
@@ -6,6 +10,9 @@ defmodule Rafty.ServersSupervisor do
     DynamicSupervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 
+  @doc """
+  Starts a new server on the current node with the specified arguments.
+  """
   @spec start_server(Rafty.args()) :: DynamicSupervisor.on_start_child()
   def start_server(args) do
     child_spec = {Rafty.Server.Supervisor, Map.put(args, :node_name, node())}
@@ -13,6 +20,9 @@ defmodule Rafty.ServersSupervisor do
     DynamicSupervisor.start_child(__MODULE__, child_spec)
   end
 
+  @doc """
+  Terminates a server with the specified id.
+  """
   @spec terminate_server(Rafty.id()) :: :ok | {:error, :not_found}
   def terminate_server(id) do
     {server_name, _node_name} = id
