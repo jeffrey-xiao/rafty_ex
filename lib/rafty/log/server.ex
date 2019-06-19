@@ -13,7 +13,7 @@ defmodule Rafty.Log.Server do
 
   @type t :: %__MODULE__{log: module(), log_state: term()}
 
-  @moduledoc """
+  @doc """
   Starts a `Rafty.Log.Server` process linked to the current process.
   """
   @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
@@ -21,7 +21,7 @@ defmodule Rafty.Log.Server do
     GenServer.start_link(__MODULE__, args, name: name(args[:server_name]))
   end
 
-  @moduledoc """
+  @doc """
   Returns the name of the server.
   """
   @spec name(Rafty.server_name()) :: atom()
@@ -29,7 +29,7 @@ defmodule Rafty.Log.Server do
     :"Log.Server.#{server_name}"
   end
 
-  @moduledoc """
+  @doc """
   Returns the term of the specified server.
   """
   @spec get_term_index(Rafty.id()) :: Rafty.term_index()
@@ -37,7 +37,7 @@ defmodule Rafty.Log.Server do
     GenServer.call({name(server_name), node_name}, :get_metadata).term_index
   end
 
-  @moduledoc """
+  @doc """
   Increments the term of the specified server.
   """
   @spec increment_term_index(Rafty.id()) :: Rafty.term_index()
@@ -52,7 +52,7 @@ defmodule Rafty.Log.Server do
     metadata.term_index + 1
   end
 
-  @moduledoc """
+  @doc """
   Sets the term of the specified server to `term_index`.
   """
   @spec set_term_index(Rafty.id(), Rafty.term_index()) :: :ok
@@ -65,7 +65,7 @@ defmodule Rafty.Log.Server do
     )
   end
 
-  @moduledoc """
+  @doc """
   Returns the server that the specified server voted for, if any.
   """
   @spec get_voted_for(Rafty.id()) :: Rafty.id() | nil
@@ -73,7 +73,7 @@ defmodule Rafty.Log.Server do
     GenServer.call({name(server_name), node_name}, :get_metadata).voted_for
   end
 
-  @moduledoc """
+  @doc """
   Sets the server that the specified serverd voted for, if any.
   """
   @spec set_voted_for(Rafty.id(), Rafty.id() | nil) :: :ok
@@ -82,7 +82,7 @@ defmodule Rafty.Log.Server do
     GenServer.call(name(server_name), {:set_metadata, put_in(metadata.voted_for, voted_for)})
   end
 
-  @moduledoc """
+  @doc """
   Returns the entry at `index` of the specified server's Raft log.
   """
   @spec get_entry(Rafty.id(), Rafty.log_index()) :: Rafty.Log.Entry.t() | nil
@@ -90,7 +90,7 @@ defmodule Rafty.Log.Server do
     GenServer.call({name(server_name), node_name}, {:get_entry, index})
   end
 
-  @moduledoc """
+  @doc """
   Returns a list of entries from `index` to the end of the specified server's Raft log.
   """
   @spec get_entries(Rafty.id(), Rafty.log_index()) :: [Rafty.Log.Entry.t()]
@@ -98,7 +98,7 @@ defmodule Rafty.Log.Server do
     GenServer.call({name(server_name), node_name}, {:get_entries, index})
   end
 
-  @moduledoc """
+  @doc """
   Appends a list of entries to `index` of the specified server's Raft log.
   """
   @spec append_entries(Rafty.id(), [Rafty.Log.Entry.t()], Rafty.log_index()) :: :ok
@@ -106,7 +106,7 @@ defmodule Rafty.Log.Server do
     GenServer.call({name(server_name), node_name}, {:append_entries, entries, index})
   end
 
-  @moduledoc """
+  @doc """
   Returns the length of the specified server's Raft log.
   """
   @spec length(Rafty.id()) :: non_neg_integer()

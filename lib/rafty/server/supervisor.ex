@@ -5,7 +5,7 @@ defmodule Rafty.Server.Supervisor do
 
   use Supervisor
 
-  @moduledoc """
+  @doc """
   Starts a `Rafty.Server.Supervisor` process linked to the current process.
   """
   @spec start_link(Rafty.args()) :: Supervisor.on_start()
