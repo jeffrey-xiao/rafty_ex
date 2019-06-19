@@ -22,26 +22,41 @@ defmodule Rafty.FSM.Server do
   @typep request_info :: {reference() | nil, term(), Rafty.timestamp()}
   @typep requests :: %{Rafty.term_index() => request_info()}
 
+  @moduledoc """
+  Starts a `Rafty.FSM.Server` process linked to the current process.
+  """
   @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
   def start_link(args) do
     GenServer.start_link(__MODULE__, args, name: name(args[:server_name]))
   end
 
+  @moduledoc """
+  Returns the name of the server.
+  """
   @spec name(Rafty.server_name()) :: atom()
   def name(server_name) do
     :"FSM.Server.#{server_name}"
   end
 
+  @moduledoc """
+  Registers a new client to the Raft state machine at a specific index and timestamp.
+  """
   @spec register(Rafty.id(), Rafty.term_index(), Rafty.timestamp()) :: term()
   def register({server_name, node_name}, index, timestamp) do
     GenServer.call({name(server_name), node_name}, {:register, index, timestamp})
   end
 
+  @moduledoc """
+  Executes a command on the Raft state machine.
+  """
   @spec execute(Rafty.id(), Rafty.client_id(), reference(), Rafty.timestamp(), term()) :: term()
   def execute({server_name, node_name}, client_id, ref, timestamp, payload) do
     GenServer.call({name(server_name), node_name}, {:execute, client_id, ref, timestamp, payload})
   end
 
+  @moduledoc """
+  Executes a read-only query on the Raft state machine.
+  """
   @spec query(Rafty.id(), term()) :: term()
   def query({server_name, node_name}, payload) do
     GenServer.call({name(server_name), node_name}, {:query, payload})

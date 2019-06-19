@@ -5,6 +5,9 @@ defmodule Rafty.ServersSupervisor do
 
   use DynamicSupervisor
 
+  @moduledoc """
+  Starts a `Rafty.ServersSupervisor` process linked to the current process.
+  """
   @spec start_link(Rafty.args()) :: Supervisor.on_start()
   def start_link(args) do
     DynamicSupervisor.start_link(__MODULE__, args, name: __MODULE__)
