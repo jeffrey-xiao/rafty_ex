@@ -3,7 +3,7 @@ defmodule Rafty.Log.RocksDBStore do
   Implementation of `Rafty.Log` that stores the entries and metadata in RocksDB.
   """
 
-  @behaviour Log
+  @behaviour Rafty.Log
 
   alias Rafty.Log
   alias Rafty.Log.{Entry, Metadata}

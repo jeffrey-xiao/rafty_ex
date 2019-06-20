@@ -5,7 +5,7 @@ defmodule Rafty.Log.InMemoryStore do
   must be persisted for correctness.
   """
 
-  @behaviour Log
+  @behaviour Rafty.Log
 
   alias Rafty.Log
   alias Rafty.Log.Metadata
