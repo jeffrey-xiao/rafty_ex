@@ -1,29 +1,19 @@
 defmodule Rafty.Server do
-  require Logger
+  @moduledoc """
+  A server that implements the Raft consensus protocol.
+  """
+
   use GenServer
+
   alias Rafty.{FSM, Log, RPC, Timer}
   alias Rafty.Server.ClientRequest
+
+  require Logger
 
   @election_timeout_low 250
   @election_timeout_high 500
   @heartbeat_timeout 100
 
-  @type t :: %__MODULE__{
-          id: Rafty.id(),
-          server_state: Rafty.server_state(),
-          cluster_config: [Rafty.id()],
-          leader: Rafty.id() | nil,
-          commit_index: Rafty.log_index(),
-          last_applied: Rafty.log_index(),
-          next_index: %{Rafty.id() => Rafty.log_index()} | nil,
-          match_index: %{Rafty.id() => Rafty.log_index()} | nil,
-          active_servers: MapSet.t(Rafty.id()) | nil,
-          heartbeat_timer: Timer.t(),
-          votes: MapSet.t(Rafty.id()) | nil,
-          election_timer: Timer.t(),
-          leader_requests: [GenServer.from()] | nil,
-          requests: [ClientRequest.t()] | nil
-        }
   defstruct id: nil,
             server_state: :follower,
             cluster_config: [],
@@ -42,6 +32,26 @@ defmodule Rafty.Server do
             leader_requests: [],
             requests: []
 
+  @type t :: %__MODULE__{
+          id: Rafty.id(),
+          server_state: Rafty.server_state(),
+          cluster_config: [Rafty.id()],
+          leader: Rafty.id() | nil,
+          commit_index: Rafty.log_index(),
+          last_applied: Rafty.log_index(),
+          next_index: %{Rafty.id() => Rafty.log_index()} | nil,
+          match_index: %{Rafty.id() => Rafty.log_index()} | nil,
+          active_servers: MapSet.t(Rafty.id()) | nil,
+          heartbeat_timer: Timer.t(),
+          votes: MapSet.t(Rafty.id()) | nil,
+          election_timer: Timer.t(),
+          leader_requests: [GenServer.from()] | nil,
+          requests: [ClientRequest.t()] | nil
+        }
+
+  @doc """
+  Starts a `Rafty.Server` process linked to the current process.
+  """
   @spec start_link(Rafty.args()) :: GenServer.on_start()
   def start_link(args) do
     GenServer.start_link(__MODULE__, args, name: args[:server_name])

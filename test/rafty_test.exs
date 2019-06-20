@@ -25,87 +25,75 @@ defmodule RaftyTest do
     File.mkdir!("db")
     on_exit(fn -> File.rm_rf!("db") end)
 
-    {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :a))
-    {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :b))
-    {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :c))
+    assert {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :a))
+    assert {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :b))
+    assert {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :c))
     %{cluster_config: cluster_config, args: args}
   end
 
   test "simple election", %{cluster_config: cluster_config} do
-    leader = Cluster.wait_for_leader(cluster_config)
-    assert leader != :timeout
+    assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
 
     cluster_config
     |> Enum.each(fn id -> assert Rafty.leader(id) == leader end)
 
-    nil = Cluster.wait_for_replication(cluster_config, 1)
+    assert Cluster.wait_for_replication(cluster_config, 1) == :ok
     assert Rafty.status(leader) == {:leader, 1, 1, 1}
   end
 
   test "simple registration", %{cluster_config: cluster_config} do
-    leader = Cluster.wait_for_leader(cluster_config)
-    assert leader != :timeout
-
-    {:ok, 2} = Rafty.register(leader)
-    {:ok, 3} = Rafty.register(leader)
+    assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
+    assert {:ok, 2} = Rafty.register(leader)
+    assert {:ok, 3} = Rafty.register(leader)
   end
 
   test "simple execution", %{cluster_config: cluster_config} do
-    leader = Cluster.wait_for_leader(cluster_config)
-    assert leader != :timeout
-
-    {:ok, client_id} = Rafty.register(leader)
-    :ok = Rafty.execute(leader, client_id, {:push, 1})
-    :ok = Rafty.execute(leader, client_id, {:push, 2})
-    {:ok, 2} = Rafty.execute(leader, client_id, :pop)
-    {:ok, 1} = Rafty.execute(leader, client_id, :pop)
+    assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
+    assert {:ok, client_id} = Rafty.register(leader)
+    assert Rafty.execute(leader, client_id, {:push, 1}) == :ok
+    assert Rafty.execute(leader, client_id, {:push, 2}) == :ok
+    assert Rafty.execute(leader, client_id, :pop) == {:ok, 2}
+    assert Rafty.execute(leader, client_id, :pop) == {:ok, 1}
   end
 
   test "cached execution", %{cluster_config: cluster_config} do
-    leader = Cluster.wait_for_leader(cluster_config)
-    assert leader != :timeout
-
-    {:ok, client_id} = Rafty.register(leader)
-    :ok = Rafty.execute(leader, client_id, {:push, 1})
+    assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
+    assert {:ok, client_id} = Rafty.register(leader)
+    assert Rafty.execute(leader, client_id, {:push, 1}) == :ok
     ref = make_ref()
-    {:ok, 1} = Rafty.execute(leader, client_id, ref, :pop)
-    {:ok, 1} = Rafty.execute(leader, client_id, ref, :pop)
-    {:ok, nil} = Rafty.execute(leader, client_id, :pop)
+    assert Rafty.execute(leader, client_id, ref, :pop) == {:ok, 1}
+    assert Rafty.execute(leader, client_id, ref, :pop) == {:ok, 1}
+    assert Rafty.execute(leader, client_id, :pop) == {:ok, nil}
   end
 
   test "simple query", %{cluster_config: cluster_config} do
-    leader = Cluster.wait_for_leader(cluster_config)
-    assert leader != :timeout
-
-    {:ok, client_id} = Rafty.register(leader)
-    0 = Rafty.query(leader, :length)
-    0 = Rafty.query(leader, :length)
-    :ok = Rafty.execute(leader, client_id, {:push, 1})
-    1 = Rafty.query(leader, :length)
-    1 = Rafty.query(leader, :length)
-    {:ok, 1} = Rafty.execute(leader, client_id, :pop)
-    0 = Rafty.query(leader, :length)
-    0 = Rafty.query(leader, :length)
+    assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
+    assert {:ok, client_id} = Rafty.register(leader)
+    assert Rafty.query(leader, :length) == 0
+    assert Rafty.query(leader, :length) == 0
+    assert Rafty.execute(leader, client_id, {:push, 1}) == :ok
+    assert Rafty.query(leader, :length) == 1
+    assert Rafty.query(leader, :length) == 1
+    assert Rafty.execute(leader, client_id, :pop) == {:ok, 1}
+    assert Rafty.query(leader, :length) == 0
+    assert Rafty.query(leader, :length) == 0
   end
 
   test "leader failure", %{cluster_config: cluster_config} do
-    leader = Cluster.wait_for_leader(cluster_config)
-    assert leader != :timeout
-    :ok = Rafty.terminate_server(leader)
-
-    new_leader = Cluster.wait_for_leader(cluster_config)
+    assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
+    assert Rafty.terminate_server(leader) == :ok
+    assert {:ok, new_leader} = new_leader = Cluster.wait_for_leader(cluster_config)
     assert new_leader != :timeout
     assert leader != new_leader
   end
 
   test "follower failure", %{cluster_config: cluster_config, args: args} do
-    leader = Cluster.wait_for_leader(cluster_config)
-    assert leader != :timeout
+    assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
 
     cluster_config
     |> Enum.filter(fn id -> id != leader end)
     |> Enum.take(1)
-    |> Enum.each(fn id -> :ok = Rafty.terminate_server(id) end)
+    |> Enum.each(fn id -> assert Rafty.terminate_server(id) == :ok end)
 
     Task.async(fn ->
       Process.sleep(1000)
@@ -113,12 +101,12 @@ defmodule RaftyTest do
       cluster_config
       |> Enum.filter(fn id -> id != leader end)
       |> Enum.each(fn {server_name, _node_name} ->
-        {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, server_name))
+        assert {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, server_name))
       end)
     end)
 
-    {:ok, client_id} = Rafty.register(leader)
-    :ok = Rafty.execute(leader, client_id, {:push, 1})
-    {:ok, 1} = Rafty.execute(leader, client_id, :pop)
+    assert {:ok, client_id} = Rafty.register(leader)
+    assert Rafty.execute(leader, client_id, {:push, 1}) == :ok
+    assert Rafty.execute(leader, client_id, :pop) == {:ok, 1}
   end
 end

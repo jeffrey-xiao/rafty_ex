@@ -1,18 +1,25 @@
 defmodule Rafty.Log.InMemoryStore do
-  alias Rafty.Log
-  alias Rafty.Log.Metadata
+  @moduledoc """
+  Implementation of `Rafty.Log` that stores the entries and metadata in-memory. This store should
+  only be used for testing and might yield incorrect results if servers crash and lose data that
+  must be persisted for correctness.
+  """
 
   @behaviour Log
 
-  @type t :: %__MODULE__{
-          metadata: Metadata.t(),
-          entries: [Rafty.Log.Entry.t()]
-        }
+  alias Rafty.Log
+  alias Rafty.Log.Metadata
+
   @enforce_keys [:metadata, :entries]
   defstruct [
     :metadata,
     :entries
   ]
+
+  @type t :: %__MODULE__{
+          metadata: Metadata.t(),
+          entries: [Rafty.Log.Entry.t()]
+        }
 
   @impl Log
   def init(_server_name) do
@@ -26,19 +33,15 @@ defmodule Rafty.Log.InMemoryStore do
   def close(_state), do: :ok
 
   @impl Log
-  def get_metadata(state) do
-    state.metadata
-  end
+  def get_metadata(state), do: state.metadata
 
   @impl Log
-  def set_metadata(state, metadata) do
-    %__MODULE__{state | metadata: metadata}
-  end
+  def set_metadata(state, metadata),
+    do: %__MODULE__{state | metadata: metadata}
 
   @impl Log
-  def get_entry(state, index) do
-    if index == 0, do: nil, else: Enum.at(state.entries, index - 1)
-  end
+  def get_entry(state, index),
+    do: if(index == 0, do: nil, else: Enum.at(state.entries, index - 1))
 
   @impl Log
   def get_entries(state, index) do
@@ -53,7 +56,5 @@ defmodule Rafty.Log.InMemoryStore do
   end
 
   @impl Log
-  def length(state) do
-    Kernel.length(state.entries)
-  end
+  def length(state), do: Kernel.length(state.entries)
 end

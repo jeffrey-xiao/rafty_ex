@@ -1,4 +1,6 @@
 defmodule RaftyTest.Util.Stack do
+  @moduledoc false
+
   @behaviour Rafty.FSM
 
   @impl Rafty.FSM

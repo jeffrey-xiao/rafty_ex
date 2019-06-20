@@ -3,8 +3,10 @@ defmodule Rafty.Log.Metadata do
   Persisted metadata of a Raft log.
   """
 
-  defstruct term_index: 0,
-            voted_for: nil
+  defstruct [
+    :voted_for,
+    term_index: 0
+  ]
 
   @type t :: %__MODULE__{term_index: Rafty.term_index(), voted_for: Rafty.opt_id()}
 end

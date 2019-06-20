@@ -1,4 +1,6 @@
 defmodule RaftyTest.Util.Cluster do
+  @moduledoc false
+
   alias RaftyTest.Util
 
   def wait_for_leader(cluster_config) do
@@ -26,8 +28,8 @@ defmodule RaftyTest.Util.Cluster do
       count = Enum.count(resps, fn {leader, id} -> leader_id == leader end)
 
       if count >= (cluster_config |> length |> div(2)) + 1,
-        do: {leader_id, true},
-        else: {nil, false}
+        do: {:ok, {:ok, leader_id}},
+        else: :retry
     end)
   end
 
@@ -51,8 +53,8 @@ defmodule RaftyTest.Util.Cluster do
       commit_index = Enum.at(commit_indexes, index)
 
       if log_index <= commit_index,
-        do: {nil, true},
-        else: {nil, false}
+        do: {:ok, :ok},
+        else: :retry
     end)
   end
 end

@@ -1,4 +1,10 @@
 defmodule Rafty.Log.RocksDBStore do
+  @moduledoc """
+  Implementation of `Rafty.Log` that stores the entries and metadata in RocksDB.
+  """
+
+  @behaviour Log
+
   alias Rafty.Log
   alias Rafty.Log.{Entry, Metadata}
 
@@ -6,14 +12,6 @@ defmodule Rafty.Log.RocksDBStore do
   @max_key <<132>>
   @db_options [create_if_missing: true]
 
-  @behaviour Log
-
-  @type t :: %__MODULE__{
-          db: :rocksdb.db_handle(),
-          path: charlist(),
-          metadata: Metadata.t(),
-          length: non_neg_integer()
-        }
   @enforce_keys [:db, :path, :metadata, :length]
   defstruct [
     :db,
@@ -21,6 +19,13 @@ defmodule Rafty.Log.RocksDBStore do
     :metadata,
     :length
   ]
+
+  @type t :: %__MODULE__{
+          db: :rocksdb.db_handle(),
+          path: charlist(),
+          metadata: Metadata.t(),
+          length: non_neg_integer()
+        }
 
   @impl Log
   def init(server_name) do
