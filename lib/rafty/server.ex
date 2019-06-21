@@ -88,7 +88,10 @@ defmodule Rafty.Server do
       log_index
     )
 
-    broadcast_append_entries(state)
+    state =
+      if length(state.cluster_config) != 1,
+        do: state |> broadcast_append_entries(),
+        else: state
 
     {:noreply,
      %__MODULE__{
@@ -126,7 +129,10 @@ defmodule Rafty.Server do
       log_index
     )
 
-    broadcast_append_entries(state)
+    state =
+      if length(state.cluster_config) != 1,
+        do: state |> broadcast_append_entries(),
+        else: state
 
     {:noreply,
      %__MODULE__{
@@ -136,7 +142,6 @@ defmodule Rafty.Server do
          ],
          match_index: Map.put(state.match_index, state.id, log_index + 1)
      }
-     |> reset_heartbeat_timer()
      |> advance_commit()
      |> advance_applied()}
   end
@@ -148,7 +153,6 @@ defmodule Rafty.Server do
   @impl GenServer
   def handle_call({:query, payload}, from, %__MODULE__{server_state: :leader} = state) do
     log_index = Log.Server.length(state.id)
-    broadcast_append_entries(state)
 
     {:noreply,
      %__MODULE__{
@@ -158,7 +162,7 @@ defmodule Rafty.Server do
            | state.requests
          ]
      }
-     |> reset_heartbeat_timer()}
+     |> broadcast_append_entries()}
   end
 
   @impl GenServer
@@ -238,7 +242,8 @@ defmodule Rafty.Server do
        from: rpc.to,
        to: rpc.from,
        term_index: term_index,
-       last_log_index: Log.Server.length(state.id),
+       last_log_index: length(rpc.entries) + rpc.prev_log_index,
+       log_length: Log.Server.length(state.id),
        success: success
      }, state}
   end
@@ -304,8 +309,9 @@ defmodule Rafty.Server do
             {Map.put(state.next_index, rpc.from, rpc.last_log_index + 1),
              Map.put(state.match_index, rpc.from, rpc.last_log_index)},
           else:
-            {Map.update!(state.next_index, rpc.from, fn next_index -> next_index - 1 end),
-             state.match_index}
+            {Map.update!(state.next_index, rpc.from, fn next_index ->
+               min(max(1, next_index - 1), rpc.log_length + 1)
+             end), state.match_index}
 
       {:noreply,
        %__MODULE__{
@@ -358,8 +364,7 @@ defmodule Rafty.Server do
         %__MODULE__{heartbeat_timer: %Timer{ref: ref}, server_state: :leader} = state
       ) do
     Logger.info("#{inspect(state.id)}: Received heartbeat timeout")
-    broadcast_append_entries(state)
-    {:noreply, state |> reset_heartbeat_timer()}
+    {:noreply, state |> broadcast_append_entries()}
   end
 
   @impl GenServer
@@ -494,7 +499,7 @@ defmodule Rafty.Server do
     |> reset_election_timer()
   end
 
-  @spec broadcast_append_entries(t()) :: :ok
+  @spec broadcast_append_entries(t()) :: t()
   defp broadcast_append_entries(state) do
     state
     |> neighbours()
@@ -518,6 +523,8 @@ defmodule Rafty.Server do
         leader_commit_index: state.commit_index
       })
     end)
+
+    reset_heartbeat_timer(state)
   end
 
   @spec advance_commit(t()) :: t()
@@ -531,12 +538,12 @@ defmodule Rafty.Server do
     entry = Log.Server.get_entry(state.id, log_index)
     term_index = Log.Server.get_term_index(state.id)
 
-    commit_index =
-      if entry != nil && entry.term_index == term_index,
-        do: log_index,
-        else: state.commit_index
-
-    %__MODULE__{state | commit_index: commit_index}
+    if entry != nil && entry.term_index == term_index && log_index > state.commit_index do
+      %__MODULE__{state | commit_index: log_index}
+      |> broadcast_append_entries()
+    else
+      state
+    end
   end
 
   @spec advance_applied(t()) :: t()

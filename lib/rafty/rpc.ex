@@ -55,8 +55,8 @@ defmodule Rafty.RPC do
       :from,
       :to,
       :term_index,
-      :last_applied,
       :last_log_index,
+      :log_length,
       :success
     ]
 
@@ -64,8 +64,8 @@ defmodule Rafty.RPC do
             from: Rafty.id(),
             to: Rafty.opt_id(),
             term_index: Rafty.term_index(),
-            last_applied: Rafty.log_index(),
             last_log_index: Rafty.log_index(),
+            log_length: non_neg_integer(),
             success: bool()
           }
   end

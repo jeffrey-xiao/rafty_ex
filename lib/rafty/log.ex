@@ -60,6 +60,6 @@ defmodule Rafty.Log do
   def merge_logs([old_head | old_tail], [new_head | new_tail] = new) do
     if old_head.term_index != new_head.term_index,
       do: new,
-      else: merge_logs(old_tail, new_tail)
+      else: [old_head | merge_logs(old_tail, new_tail)]
   end
 end
