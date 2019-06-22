@@ -82,7 +82,7 @@ defmodule RaftyTest do
   test "leader failure", %{cluster_config: cluster_config} do
     assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
     assert Rafty.terminate_server(leader) == :ok
-    assert {:ok, new_leader} = new_leader = Cluster.wait_for_leader(cluster_config)
+    assert {:ok, new_leader} = Cluster.wait_for_leader(cluster_config)
     assert new_leader != :timeout
     assert leader != new_leader
   end

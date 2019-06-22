@@ -9,7 +9,7 @@ defmodule RaftyTest.Util.Cluster do
         cluster_config
         |> Enum.map(fn id -> {Task.async(fn -> Rafty.leader(id) end), id} end)
         |> Enum.map(fn {task, id} -> {Task.await(task), id} end)
-        |> Enum.filter(fn {resp, id} ->
+        |> Enum.filter(fn {resp, _id} ->
           case resp do
             {:error, _msg} -> false
             nil -> false
@@ -22,10 +22,10 @@ defmodule RaftyTest.Util.Cluster do
         |> Enum.find(fn {leader, id} -> leader == id end)
         |> case do
           nil -> nil
-          {leader_id, id} -> leader_id
+          {leader_id, _id} -> leader_id
         end
 
-      count = Enum.count(resps, fn {leader, id} -> leader_id == leader end)
+      count = Enum.count(resps, fn {leader, _id} -> leader_id == leader end)
 
       if count >= (cluster_config |> length |> div(2)) + 1,
         do: {:ok, {:ok, leader_id}},
