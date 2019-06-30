@@ -34,6 +34,7 @@ defmodule Rafty.Log.RocksDBStoreTest do
     Server.stop(id)
     {:ok, _pid} = Server.start_link(args)
     assert Server.get_term_index(id) == 2
+    Server.stop(id)
   end
 
   test "voted for", %{args: args, id: id} do
@@ -43,6 +44,7 @@ defmodule Rafty.Log.RocksDBStoreTest do
     Server.stop(id)
     {:ok, _pid} = Server.start_link(args)
     assert Server.get_voted_for(id) == :a
+    Server.stop(id)
   end
 
   test "entries", %{id: id} do
@@ -54,6 +56,7 @@ defmodule Rafty.Log.RocksDBStoreTest do
     assert Server.get_entry(id, 1) == e1
     assert Server.get_entries(id, 1) == [e1, e2]
     assert Server.length(id) == 2
+    Server.stop(id)
   end
 
   test "override entries", %{id: id} do
@@ -65,6 +68,7 @@ defmodule Rafty.Log.RocksDBStoreTest do
     assert Server.append_entries(id, [e1, new_e2], 0) == :ok
     assert Server.get_entries(id, 1) == [e1, new_e2]
     assert Server.length(id) == 2
+    Server.stop(id)
   end
 
   test "missing entries", %{id: id} do
@@ -75,6 +79,7 @@ defmodule Rafty.Log.RocksDBStoreTest do
     assert Server.append_entries(id, [e1, e2], 0) == :ok
     assert Server.get_entries(id, 1) == [e1, e2, e3]
     assert Server.length(id) == 3
+    Server.stop(id)
   end
 
   test "length", %{args: args, id: id} do
@@ -85,5 +90,6 @@ defmodule Rafty.Log.RocksDBStoreTest do
     Server.stop(id)
     {:ok, _pid} = Server.start_link(args)
     assert Server.length(id) == 2
+    Server.stop(id)
   end
 end
