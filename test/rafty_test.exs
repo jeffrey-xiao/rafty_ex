@@ -1,9 +1,10 @@
 defmodule RaftyTest do
   use ExUnit.Case
-  doctest Rafty
 
   alias Rafty.Log
-  alias RaftyTest.Util.{Cluster, Stack}
+  alias Rafty.TestingUtil.{Cluster, Stack}
+
+  doctest Rafty
 
   setup do
     Application.stop(:rafty)

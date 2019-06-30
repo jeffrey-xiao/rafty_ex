@@ -44,7 +44,7 @@ defmodule Rafty.MixProject do
 
   defp elixirc_paths(env) do
     case env do
-      :test -> ["lib", "test/rafty_test"]
+      :test -> ["lib", "test/rafty/testing_util.ex", "test/rafty/testing_util"]
       _ -> ["lib"]
     end
   end

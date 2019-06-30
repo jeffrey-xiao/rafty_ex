@@ -1,10 +1,10 @@
-defmodule RaftyTest.Util.Cluster do
+defmodule Rafty.TestingUtil.Cluster do
   @moduledoc false
 
-  alias RaftyTest.Util
+  alias Rafty.TestingUtil
 
   def wait_for_leader(cluster_config) do
-    Util.succeed_soon(fn ->
+    TestingUtil.succeed_soon(fn ->
       resps =
         cluster_config
         |> Enum.map(fn id -> {Task.async(fn -> Rafty.leader(id) end), id} end)
@@ -34,7 +34,7 @@ defmodule RaftyTest.Util.Cluster do
   end
 
   def wait_for_replication(cluster_config, log_index) do
-    Util.succeed_soon(fn ->
+    TestingUtil.succeed_soon(fn ->
       commit_indexes =
         cluster_config
         |> Enum.map(fn id -> Task.async(fn -> Rafty.status(id) end) end)

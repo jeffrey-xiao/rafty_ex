@@ -22,6 +22,15 @@ defmodule Rafty.Log.Server do
   end
 
   @doc """
+  Stops a `Rafty.Log.Server` process.
+  """
+  @spec stop(Rafty.server_name()) :: :ok
+  def stop({server_name, node_name}) do
+    :ok = GenServer.call({name(server_name), node_name}, :close)
+    GenServer.stop({name(server_name), node_name})
+  end
+
+  @doc """
   Returns the name of the server.
   """
   @spec name(Rafty.server_name()) :: atom()
@@ -117,6 +126,11 @@ defmodule Rafty.Log.Server do
   @impl GenServer
   def init(args) do
     {:ok, %__MODULE__{log: args[:log], log_state: args[:log].init(args[:server_name])}}
+  end
+
+  @impl GenServer
+  def handle_call(:close, _from, state) do
+    {:reply, state.log.close(state.log_state), state}
   end
 
   @impl GenServer

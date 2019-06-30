@@ -1,5 +1,13 @@
-defmodule RaftyTest.Util do
+defmodule Rafty.TestingUtil do
   @moduledoc false
+
+  def new_entry(term_index, command, payload) do
+    %Rafty.Log.Entry{
+      term_index: term_index,
+      command: command,
+      payload: payload
+    }
+  end
 
   def succeed_soon(test_fn, timeout \\ 500, retries \\ 3, backoff_ratio \\ 1) do
     if retries == 0 do

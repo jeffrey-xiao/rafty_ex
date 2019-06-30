@@ -44,7 +44,7 @@ defmodule Rafty.Log.RocksDBStore do
 
   @impl Log
   def close(state) do
-    :rocksdb.close(state.path)
+    :rocksdb.close(state.db)
   end
 
   @impl Log
@@ -93,10 +93,10 @@ defmodule Rafty.Log.RocksDBStore do
 
   @impl Log
   def append_entries(state, entries, index) do
-    length = index + Kernel.length(entries)
     old_entries = get_entries(state, index + 1)
     :ok = :rocksdb.delete_range(state.db, :erlang.term_to_binary(index + 1), @max_key, [])
     entries = Rafty.Log.merge_logs(old_entries, entries)
+    length = index + Kernel.length(entries)
 
     entries
     |> Enum.with_index(index + 1)
