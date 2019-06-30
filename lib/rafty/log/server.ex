@@ -14,6 +14,14 @@ defmodule Rafty.Log.Server do
   @type t :: %__MODULE__{log: module(), log_state: term()}
 
   @doc """
+  Returns the name of the server.
+  """
+  @spec name(Rafty.server_name()) :: atom()
+  def name(server_name) do
+    :"Log.Server.#{server_name}"
+  end
+
+  @doc """
   Starts a `Rafty.Log.Server` process linked to the current process.
   """
   @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
@@ -24,18 +32,10 @@ defmodule Rafty.Log.Server do
   @doc """
   Stops a `Rafty.Log.Server` process.
   """
-  @spec stop(Rafty.server_name()) :: :ok
+  @spec stop(Rafty.id()) :: :ok
   def stop({server_name, node_name}) do
     :ok = GenServer.call({name(server_name), node_name}, :close)
     GenServer.stop({name(server_name), node_name})
-  end
-
-  @doc """
-  Returns the name of the server.
-  """
-  @spec name(Rafty.server_name()) :: atom()
-  def name(server_name) do
-    :"Log.Server.#{server_name}"
   end
 
   @doc """

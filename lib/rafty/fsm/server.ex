@@ -23,19 +23,19 @@ defmodule Rafty.FSM.Server do
   @typep requests :: %{Rafty.term_index() => request_info()}
 
   @doc """
-  Starts a `Rafty.FSM.Server` process linked to the current process.
-  """
-  @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
-  def start_link(args) do
-    GenServer.start_link(__MODULE__, args, name: name(args[:server_name]))
-  end
-
-  @doc """
   Returns the name of the server.
   """
   @spec name(Rafty.server_name()) :: atom()
   def name(server_name) do
     :"FSM.Server.#{server_name}"
+  end
+
+  @doc """
+  Starts a `Rafty.FSM.Server` process linked to the current process.
+  """
+  @spec start_link(Rafty.args()) :: {:ok, term()} | {:error, term()}
+  def start_link(args) do
+    GenServer.start_link(__MODULE__, args, name: name(args[:server_name]))
   end
 
   @doc """
