@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.20.2">
+    <meta name="project" content="rafty v0.1.0">
+    <title>Rafty — rafty v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-d9f58a6320b5bfa6dd77.css" />
+    <script src="dist/sidebar_items-c040101d37.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/html-d9f58a6320b5bfa6dd77.js"></script>
+    
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode')) document.body.className += ' night-mode'; } catch (e) { }</script>
+    <div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex" class="sidebar-projectName">
+rafty      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.1.0
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+
+      <h1>
+        <small class="app-vsn">rafty v0.1.0</small>
+Rafty        
+          <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L1" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+      </h1>
+
+
+        <section id="moduledoc">
+<p>An implementation of the Raft consensus algorithm written in pure Elixir. For learning purposes
+only and not production use.</p>
+        </section>
+
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:args/0">args()</a>
+  </div>
+    <div class="summary-synopsis"><p>The configuration of a server.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:catch_exit_error/0">catch_exit_error()</a>
+  </div>
+    <div class="summary-synopsis"><p>An error caught when a request exits.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:catch_exit_ref_error/0">catch_exit_ref_error()</a>
+  </div>
+    <div class="summary-synopsis"><p>An error caught when a request exits with the associated reference to the request.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:client_id/0">client_id()</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:id/0">id()</a>
+  </div>
+    <div class="summary-synopsis"><p>A tuple <code class="inline">{server_name, node_name}</code> that represents the unique id of a server.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:log_index/0">log_index()</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:node_name/0">node_name()</a>
+  </div>
+    <div class="summary-synopsis"><p>The name of a node.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:not_leader/0">not_leader()</a>
+  </div>
+    <div class="summary-synopsis"><p>An error returned when a server is not a leader. This error provides a hint to the leader, if any.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:opt_id/0">opt_id()</a>
+  </div>
+    <div class="summary-synopsis"><p>A possibly <code class="inline">nil</code> id of a server.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:rpc/0">rpc()</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:server_name/0">server_name()</a>
+  </div>
+    <div class="summary-synopsis"><p>The name of a server. Should be unique among all servers.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:server_state/0">server_state()</a>
+  </div>
+    <div class="summary-synopsis"><p>The state of server server. A server is either a follower, candidate, or a leader.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:term_index/0">term_index()</a>
+  </div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:timestamp/0">timestamp()</a>
+  </div>
+</div>
+  </div>
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#execute/5">execute(id, client_id, ref \\ make_ref(), payload, timeout \\ 5000)</a>
+  </div>
+    <div class="summary-synopsis"><p>Executes a command that may modify the Raft state machine on the server with the specified id. If
+the server is not a leader, this function will return the leader of the server, possibly <code class="inline">nil</code>.
+Clients must specify the client id created by <code class="inline">register()</code> when calling <code class="inline">execute()</code>. If
+<code class="inline">execute()</code> times out, it will return the reference associated with the execute call. If a client
+wants to retry the command, they <em>must</em> supply this reference in subsequent retries. Additionally,
+if a client is retrying a command, they must not make any execute commands with different
+references or the command may be executed twice.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#leader/2">leader(id, timeout \\ 5000)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the leader of the server with the specified id. If this function does not timeout, it will
+not return nil. If the server has no leader at the time of the call, it will wait until a leader
+has been elected before replying.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#query/3">query(id, payload, timeout \\ 5000)</a>
+  </div>
+    <div class="summary-synopsis"><p>Executies a read-only query of the Raft state machine on the server with the specified id. If the
+server is not a leader, this function will return the leader of the server, possibly <code class="inline">nil</code>. Any
+query should not mutate the Raft state machine because it does not persist in the Raft log, so
+server failures may cause Raft state machine inconsistencies.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#register/2">register(id, timeout \\ 5000)</a>
+  </div>
+    <div class="summary-synopsis"><p>Registers a client on the server with the specified id. If the server is not a leader, this
+function will return the leader of the server, possibly <code class="inline">nil</code>. Clients must call <code class="inline">register()</code>
+before calling <code class="inline">execute()</code>.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#start_server/1">start_server(args)</a>
+  </div>
+    <div class="summary-synopsis"><p>Starts a new server on the current server with the specified arguments.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#status/2">status(id, timeout \\ 5000)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns a tuple <code class="inline">{server_state, term_index, commit_index, last_applied}</code> of the server with the
+specified id.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#terminate_server/1">terminate_server(id)</a>
+  </div>
+    <div class="summary-synopsis"><p>Terminates a server with the specified id.</p></div>
+</div>
+  </div>
+        </section>
+
+        <section id="types" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#types">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Types          </h1>
+          <div class="types-list">
+<section class="detail" id="t:args/0">
+    <div class="detail-header">
+    <a href="#t:args/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">args()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L37" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>args() :: %{
+  server_name: <a href="#t:server_name/0">server_name</a>(),
+  node_name: <a href="#t:node_name/0">node_name</a>(),
+  fsm: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
+  log: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()
+}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>The configuration of a server.</p>
+  </section>
+</section>
+<section class="detail" id="t:catch_exit_error/0">
+    <div class="detail-header">
+    <a href="#t:catch_exit_error/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">catch_exit_error()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L52" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>catch_exit_error() :: {:error, :noproc | :timeout}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>An error caught when a request exits.</p>
+  </section>
+</section>
+<section class="detail" id="t:catch_exit_ref_error/0">
+    <div class="detail-header">
+    <a href="#t:catch_exit_ref_error/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">catch_exit_ref_error()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L57" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>catch_exit_ref_error() :: {:error, :noproc}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>An error caught when a request exits with the associated reference to the request.</p>
+  </section>
+</section>
+<section class="detail" id="t:client_id/0">
+    <div class="detail-header">
+    <a href="#t:client_id/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">client_id()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L65" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>client_id() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+  </section>
+</section>
+<section class="detail" id="t:id/0">
+    <div class="detail-header">
+    <a href="#t:id/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">id()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L22" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>id() :: {<a href="#t:server_name/0">server_name</a>(), <a href="#t:node_name/0">node_name</a>()}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>A tuple <code class="inline">{server_name, node_name}</code> that represents the unique id of a server.</p>
+  </section>
+</section>
+<section class="detail" id="t:log_index/0">
+    <div class="detail-header">
+    <a href="#t:log_index/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">log_index()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L63" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>log_index() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+  </section>
+</section>
+<section class="detail" id="t:node_name/0">
+    <div class="detail-header">
+    <a href="#t:node_name/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">node_name()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L17" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>node_name() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>The name of a node.</p>
+  </section>
+</section>
+<section class="detail" id="t:not_leader/0">
+    <div class="detail-header">
+    <a href="#t:not_leader/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">not_leader()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L47" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>not_leader() :: {:not_leader, <a href="#t:id/0">id</a>() | nil}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>An error returned when a server is not a leader. This error provides a hint to the leader, if any.</p>
+  </section>
+</section>
+<section class="detail" id="t:opt_id/0">
+    <div class="detail-header">
+    <a href="#t:opt_id/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">opt_id()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L27" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>opt_id() :: <a href="#t:id/0">id</a>() | nil</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>A possibly <code class="inline">nil</code> id of a server.</p>
+  </section>
+</section>
+<section class="detail" id="t:rpc/0">
+    <div class="detail-header">
+    <a href="#t:rpc/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">rpc()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L58" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>rpc() ::
+  <a href="Rafty.RPC.AppendEntriesRequest.html#t:t/0">Rafty.RPC.AppendEntriesRequest.t</a>()
+  | <a href="Rafty.RPC.AppendEntriesResponse.html#t:t/0">Rafty.RPC.AppendEntriesResponse.t</a>()
+  | <a href="Rafty.RPC.RequestVoteRequest.html#t:t/0">Rafty.RPC.RequestVoteRequest.t</a>()
+  | <a href="Rafty.RPC.RequestVoteResponse.html#t:t/0">Rafty.RPC.RequestVoteResponse.t</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+  </section>
+</section>
+<section class="detail" id="t:server_name/0">
+    <div class="detail-header">
+    <a href="#t:server_name/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">server_name()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L12" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>server_name() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>The name of a server. Should be unique among all servers.</p>
+  </section>
+</section>
+<section class="detail" id="t:server_state/0">
+    <div class="detail-header">
+    <a href="#t:server_state/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">server_state()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L32" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>server_state() :: :follower | :candidate | :leader</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>The state of server server. A server is either a follower, candidate, or a leader.</p>
+  </section>
+</section>
+<section class="detail" id="t:term_index/0">
+    <div class="detail-header">
+    <a href="#t:term_index/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">term_index()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L64" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>term_index() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+  </section>
+</section>
+<section class="detail" id="t:timestamp/0">
+    <div class="detail-header">
+    <a href="#t:timestamp/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">timestamp()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L66" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>timestamp() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+  </section>
+</section>
+          </div>
+        </section>
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Functions          </h1>
+          <div class="functions-list">
+<section class="detail" id="execute/5">
+  
+    <span id="execute/3"></span>
+
+    <span id="execute/4"></span>
+  <div class="detail-header">
+    <a href="#execute/5" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">execute(id, client_id, ref \\ make_ref(), payload, timeout \\ 5000)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L110" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>execute(<a href="#t:id/0">id</a>(), <a href="#t:client_id/0">client_id</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">reference</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">timeout</a>()) ::
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>() | <a href="#t:not_leader/0">not_leader</a>() | <a href="#t:catch_exit_ref_error/0">catch_exit_ref_error</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Executes a command that may modify the Raft state machine on the server with the specified id. If
+the server is not a leader, this function will return the leader of the server, possibly <code class="inline">nil</code>.
+Clients must specify the client id created by <code class="inline">register()</code> when calling <code class="inline">execute()</code>. If
+<code class="inline">execute()</code> times out, it will return the reference associated with the execute call. If a client
+wants to retry the command, they <em>must</em> supply this reference in subsequent retries. Additionally,
+if a client is retrying a command, they must not make any execute commands with different
+references or the command may be executed twice.</p>
+  </section>
+</section>
+<section class="detail" id="leader/2">
+  
+    <span id="leader/1"></span>
+  <div class="detail-header">
+    <a href="#leader/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">leader(id, timeout \\ 5000)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L144" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>leader(<a href="#t:id/0">id</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">timeout</a>()) :: <a href="Rafty.html#t:id/0">Rafty.id</a>() | nil | <a href="#t:catch_exit_error/0">catch_exit_error</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns the leader of the server with the specified id. If this function does not timeout, it will
+not return nil. If the server has no leader at the time of the call, it will wait until a leader
+has been elected before replying.</p>
+  </section>
+</section>
+<section class="detail" id="query/3">
+  
+    <span id="query/2"></span>
+  <div class="detail-header">
+    <a href="#query/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">query(id, payload, timeout \\ 5000)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L124" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>query(<a href="#t:id/0">id</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">timeout</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>() | <a href="#t:not_leader/0">not_leader</a>() | <a href="#t:catch_exit_error/0">catch_exit_error</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Executies a read-only query of the Raft state machine on the server with the specified id. If the
+server is not a leader, this function will return the leader of the server, possibly <code class="inline">nil</code>. Any
+query should not mutate the Raft state machine because it does not persist in the Raft log, so
+server failures may cause Raft state machine inconsistencies.</p>
+  </section>
+</section>
+<section class="detail" id="register/2">
+  
+    <span id="register/1"></span>
+  <div class="detail-header">
+    <a href="#register/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">register(id, timeout \\ 5000)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L95" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>register(<a href="#t:id/0">id</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">timeout</a>()) :: <a href="#t:client_id/0">client_id</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Registers a client on the server with the specified id. If the server is not a leader, this
+function will return the leader of the server, possibly <code class="inline">nil</code>. Clients must call <code class="inline">register()</code>
+before calling <code class="inline">execute()</code>.</p>
+  </section>
+</section>
+<section class="detail" id="start_server/1">
+    <div class="detail-header">
+    <a href="#start_server/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">start_server(args)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L77" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>start_server(<a href="#t:args/0">args</a>()) :: <a href="https://hexdocs.pm/elixir/DynamicSupervisor.html#t:on_start_child/0">DynamicSupervisor.on_start_child</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Starts a new server on the current server with the specified arguments.</p>
+  </section>
+</section>
+<section class="detail" id="status/2">
+  
+    <span id="status/1"></span>
+  <div class="detail-header">
+    <a href="#status/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">status(id, timeout \\ 5000)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L134" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>status(<a href="#t:id/0">id</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">timeout</a>()) ::
+  {<a href="#t:server_state/0">server_state</a>(), <a href="#t:term_index/0">term_index</a>(), <a href="#t:log_index/0">log_index</a>(), <a href="#t:log_index/0">log_index</a>()} | <a href="#t:catch_exit_error/0">catch_exit_error</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns a tuple <code class="inline">{server_state, term_index, commit_index, last_applied}</code> of the server with the
+specified id.</p>
+  </section>
+</section>
+<section class="detail" id="terminate_server/1">
+    <div class="detail-header">
+    <a href="#terminate_server/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">terminate_server(id)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty.ex#L85" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>terminate_server(<a href="#t:id/0">id</a>()) :: :ok | {:error, :not_found}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Terminates a server with the specified id.</p>
+  </section>
+</section>
+          </div>
+        </section>
+          <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.20.2),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  
+  </body>
+</html>
+

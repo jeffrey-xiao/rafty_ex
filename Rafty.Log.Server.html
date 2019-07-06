@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.20.2">
+    <meta name="project" content="rafty v0.1.0">
+    <title>Rafty.Log.Server — rafty v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-d9f58a6320b5bfa6dd77.css" />
+    <script src="dist/sidebar_items-c040101d37.js"></script>
+      <script src="docs_config.js"></script>
+    <script async src="dist/html-d9f58a6320b5bfa6dd77.js"></script>
+    
+  </head>
+  <body data-type="modules">
+    <script>try { if(localStorage.getItem('night-mode')) document.body.className += ' night-mode'; } catch (e) { }</script>
+    <div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button">
+      <span class="icon-search" aria-hidden="true"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button">
+      <span class="icon-cross" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Search" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex" class="sidebar-projectName">
+rafty      </a>
+      <h2 class="sidebar-projectVersion">
+        v0.1.0
+      </h2>
+    </div>
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list" href="#full-list">Modules</a></li>
+
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+
+      <h1>
+        <small class="app-vsn">rafty v0.1.0</small>
+Rafty.Log.Server        
+          <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L1" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+      </h1>
+
+
+        <section id="moduledoc">
+<p>A server that is the interface to the underlying Raft log.</p>
+        </section>
+
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:t/0">t()</a>
+  </div>
+</div>
+  </div>
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#append_entries/3">append_entries(arg, entries, index)</a>
+  </div>
+    <div class="summary-synopsis"><p>Appends a list of entries to <code class="inline">index</code> of the specified server&#39;s Raft log.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#child_spec/1">child_spec(init_arg)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns a specification to start this module under a supervisor.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_entries/2">get_entries(arg, index)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns a list of entries from <code class="inline">index</code> to the end of the specified server&#39;s Raft log.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_entry/2">get_entry(arg, index)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the entry at <code class="inline">index</code> of the specified server&#39;s Raft log.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_term_index/1">get_term_index(arg)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the term of the specified server.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_voted_for/1">get_voted_for(arg)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the server that the specified server voted for, if any.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#increment_term_index/1">increment_term_index(arg)</a>
+  </div>
+    <div class="summary-synopsis"><p>Increments the term of the specified server.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#length/1">length(arg)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the length of the specified server&#39;s Raft log.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#name/1">name(server_name)</a>
+  </div>
+    <div class="summary-synopsis"><p>Returns the name of the server.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#set_term_index/2">set_term_index(arg, term_index)</a>
+  </div>
+    <div class="summary-synopsis"><p>Sets the term of the specified server to <code class="inline">term_index</code>.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#set_voted_for/2">set_voted_for(arg, voted_for)</a>
+  </div>
+    <div class="summary-synopsis"><p>Sets the server that the specified serverd voted for, if any.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#start_link/1">start_link(args)</a>
+  </div>
+    <div class="summary-synopsis"><p>Starts a <a href="#content"><code class="inline">Rafty.Log.Server</code></a> process linked to the current process.</p></div>
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#stop/1">stop(arg)</a>
+  </div>
+    <div class="summary-synopsis"><p>Stops a <a href="#content"><code class="inline">Rafty.Log.Server</code></a> process.</p></div>
+</div>
+  </div>
+        </section>
+
+        <section id="types" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#types">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Types          </h1>
+          <div class="types-list">
+<section class="detail" id="t:t/0">
+    <div class="detail-header">
+    <a href="#t:t/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">t()</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L14" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>t() :: %Rafty.Log.Server{log: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">module</a>(), log_state: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+  </section>
+</section>
+          </div>
+        </section>
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Functions          </h1>
+          <div class="functions-list">
+<section class="detail" id="append_entries/3">
+    <div class="detail-header">
+    <a href="#append_entries/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">append_entries(arg, entries, index)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L114" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>append_entries(<a href="Rafty.html#t:id/0">Rafty.id</a>(), [<a href="Rafty.Log.Entry.html#t:t/0">Rafty.Log.Entry.t</a>()], <a href="Rafty.html#t:log_index/0">Rafty.log_index</a>()) :: :ok</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Appends a list of entries to <code class="inline">index</code> of the specified server&#39;s Raft log.</p>
+  </section>
+</section>
+<section class="detail" id="child_spec/1">
+    <div class="detail-header">
+    <a href="#child_spec/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">child_spec(init_arg)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L6" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+          </div>
+  <section class="docstring">
+<p>Returns a specification to start this module under a supervisor.</p>
+<p>See <a href="https://hexdocs.pm/elixir/Supervisor.html"><code class="inline">Supervisor</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_entries/2">
+    <div class="detail-header">
+    <a href="#get_entries/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_entries(arg, index)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L106" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>get_entries(<a href="Rafty.html#t:id/0">Rafty.id</a>(), <a href="Rafty.html#t:log_index/0">Rafty.log_index</a>()) :: [<a href="Rafty.Log.Entry.html#t:t/0">Rafty.Log.Entry.t</a>()]</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns a list of entries from <code class="inline">index</code> to the end of the specified server&#39;s Raft log.</p>
+  </section>
+</section>
+<section class="detail" id="get_entry/2">
+    <div class="detail-header">
+    <a href="#get_entry/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_entry(arg, index)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L98" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>get_entry(<a href="Rafty.html#t:id/0">Rafty.id</a>(), <a href="Rafty.html#t:log_index/0">Rafty.log_index</a>()) :: <a href="Rafty.Log.Entry.html#t:t/0">Rafty.Log.Entry.t</a>() | nil</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns the entry at <code class="inline">index</code> of the specified server&#39;s Raft log.</p>
+  </section>
+</section>
+<section class="detail" id="get_term_index/1">
+    <div class="detail-header">
+    <a href="#get_term_index/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_term_index(arg)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L45" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>get_term_index(<a href="Rafty.html#t:id/0">Rafty.id</a>()) :: <a href="Rafty.html#t:term_index/0">Rafty.term_index</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns the term of the specified server.</p>
+  </section>
+</section>
+<section class="detail" id="get_voted_for/1">
+    <div class="detail-header">
+    <a href="#get_voted_for/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_voted_for(arg)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L81" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>get_voted_for(<a href="Rafty.html#t:id/0">Rafty.id</a>()) :: <a href="Rafty.html#t:id/0">Rafty.id</a>() | nil</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns the server that the specified server voted for, if any.</p>
+  </section>
+</section>
+<section class="detail" id="increment_term_index/1">
+    <div class="detail-header">
+    <a href="#increment_term_index/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">increment_term_index(arg)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L53" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>increment_term_index(<a href="Rafty.html#t:id/0">Rafty.id</a>()) :: <a href="Rafty.html#t:term_index/0">Rafty.term_index</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Increments the term of the specified server.</p>
+  </section>
+</section>
+<section class="detail" id="length/1">
+    <div class="detail-header">
+    <a href="#length/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">length(arg)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L122" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>length(<a href="Rafty.html#t:id/0">Rafty.id</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns the length of the specified server&#39;s Raft log.</p>
+  </section>
+</section>
+<section class="detail" id="name/1">
+    <div class="detail-header">
+    <a href="#name/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">name(server_name)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L20" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>name(<a href="Rafty.html#t:server_name/0">Rafty.server_name</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Returns the name of the server.</p>
+  </section>
+</section>
+<section class="detail" id="set_term_index/2">
+    <div class="detail-header">
+    <a href="#set_term_index/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">set_term_index(arg, term_index)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L68" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>set_term_index(<a href="Rafty.html#t:id/0">Rafty.id</a>(), <a href="Rafty.html#t:term_index/0">Rafty.term_index</a>()) :: :ok</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Sets the term of the specified server to <code class="inline">term_index</code>.</p>
+  </section>
+</section>
+<section class="detail" id="set_voted_for/2">
+    <div class="detail-header">
+    <a href="#set_voted_for/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">set_voted_for(arg, voted_for)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L89" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>set_voted_for(<a href="Rafty.html#t:id/0">Rafty.id</a>(), <a href="Rafty.html#t:id/0">Rafty.id</a>() | nil) :: :ok</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Sets the server that the specified serverd voted for, if any.</p>
+  </section>
+</section>
+<section class="detail" id="start_link/1">
+    <div class="detail-header">
+    <a href="#start_link/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">start_link(args)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L28" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>start_link(<a href="Rafty.html#t:args/0">Rafty.args</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()}</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Starts a <a href="#content"><code class="inline">Rafty.Log.Server</code></a> process linked to the current process.</p>
+  </section>
+</section>
+<section class="detail" id="stop/1">
+    <div class="detail-header">
+    <a href="#stop/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">stop(arg)</span>
+      <a href="https://gitlab.com/jeffrey-xiao/rafty_ex/blob/master/lib/rafty/log/server.ex#L36" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+        
+      <div class="specs">
+          <pre>stop(<a href="Rafty.html#t:id/0">Rafty.id</a>()) :: :ok</pre>
+      </div>
+  </div>
+  <section class="docstring">
+<p>Stops a <a href="#content"><code class="inline">Rafty.Log.Server</code></a> process.</p>
+  </section>
+</section>
+          </div>
+        </section>
+          <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.20.2),
+          </span>
+          <span class="line">
+            designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+  
+  </body>
+</html>
+
