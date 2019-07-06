@@ -1,5 +1,5 @@
 defmodule Rafty.Log.RocksDBStoreTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Rafty.Log.{Server, RocksDBStore}
   alias Rafty.TestingUtil
@@ -7,7 +7,7 @@ defmodule Rafty.Log.RocksDBStoreTest do
   doctest Rafty.Log.RocksDBStore
 
   setup do
-    server_name = :test
+    server_name = :rocks_db_store_test
     node_name = node()
 
     args = %{
@@ -15,14 +15,14 @@ defmodule Rafty.Log.RocksDBStoreTest do
       log: RocksDBStore
     }
 
-    File.mkdir!("db")
-    on_exit(fn -> File.rm_rf!("db") end)
+    File.mkdir_p!("db")
+    on_exit(fn -> File.rm_rf!(Path.join("db", Atom.to_string(server_name))) end)
     {:ok, pid} = Server.start_link(args)
     %{pid: pid, args: args, id: {server_name, node_name}}
   end
 
   test "name", %{args: args} do
-    assert Server.name(args[:server_name]) == :"Log.Server.test"
+    assert Server.name(args[:server_name]) == :"Log.Server.rocks_db_store_test"
   end
 
   test "term index", %{args: args, id: id} do

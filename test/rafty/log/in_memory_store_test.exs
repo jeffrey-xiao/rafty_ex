@@ -1,5 +1,5 @@
 defmodule Rafty.Log.InMemoryStoreTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Rafty.Log.{Server, InMemoryStore}
   alias Rafty.TestingUtil
@@ -7,7 +7,7 @@ defmodule Rafty.Log.InMemoryStoreTest do
   doctest Rafty.Log.InMemoryStore
 
   setup do
-    server_name = :test
+    server_name = :in_memory_store_test
     node_name = node()
 
     args = %{
@@ -15,12 +15,12 @@ defmodule Rafty.Log.InMemoryStoreTest do
       log: InMemoryStore
     }
 
-    {:ok, pid} = Server.start_link(args)
-    %{pid: pid, args: args, id: {server_name, node_name}}
+    {:ok, _pid} = Server.start_link(args)
+    %{args: args, id: {server_name, node_name}}
   end
 
   test "name", %{args: args} do
-    assert Server.name(args[:server_name]) == :"Log.Server.test"
+    assert Server.name(args[:server_name]) == :"Log.Server.in_memory_store_test"
   end
 
   test "term index", %{id: id} do

@@ -79,7 +79,7 @@ defmodule Rafty.FSM.Server do
 
     case Map.get(requests, client_id) do
       nil ->
-        {:reply, :non_existent_session, %__MODULE__{state | requests: requests}}
+        {:reply, {:error, :non_existent_client}, %__MODULE__{state | requests: requests}}
 
       {last_ref, last_resp, _expiration_timestamp} ->
         if last_ref == ref do

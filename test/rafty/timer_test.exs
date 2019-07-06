@@ -1,5 +1,5 @@
 defmodule Rafty.TimerTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Rafty.Timer
 

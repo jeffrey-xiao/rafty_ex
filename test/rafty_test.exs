@@ -1,10 +1,16 @@
 defmodule RaftyTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Rafty.Log
   alias Rafty.TestingUtil.{Cluster, Stack}
 
   doctest Rafty
+
+  defp clean_db(cluster_config) do
+    :ok = Enum.each(cluster_config, fn {server_name, _node_name} ->
+      File.rm_rf!(Path.join("db", Atom.to_string(server_name)))
+    end)
+  end
 
   setup do
     Application.stop(:rafty)
@@ -23,8 +29,8 @@ defmodule RaftyTest do
       ttl: 10 * 60 * 1000 * 1000 * 1000
     }
 
-    File.mkdir!("db")
-    on_exit(fn -> File.rm_rf!("db") end)
+    File.mkdir_p!("db")
+    on_exit(fn -> clean_db(cluster_config) end)
 
     assert {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :a))
     assert {:ok, _pid} = Rafty.start_server(Map.put(args, :server_name, :b))
@@ -70,14 +76,14 @@ defmodule RaftyTest do
   test "simple query", %{cluster_config: cluster_config} do
     assert {:ok, leader} = Cluster.wait_for_leader(cluster_config)
     assert {:ok, client_id} = Rafty.register(leader)
-    assert Rafty.query(leader, :length) == 0
-    assert Rafty.query(leader, :length) == 0
+    assert Rafty.query(leader, :length) == {:ok, 0}
+    assert Rafty.query(leader, :length) == {:ok, 0}
     assert Rafty.execute(leader, client_id, {:push, 1}) == :ok
-    assert Rafty.query(leader, :length) == 1
-    assert Rafty.query(leader, :length) == 1
+    assert Rafty.query(leader, :length) == {:ok, 1}
+    assert Rafty.query(leader, :length) == {:ok, 1}
     assert Rafty.execute(leader, client_id, :pop) == {:ok, 1}
-    assert Rafty.query(leader, :length) == 0
-    assert Rafty.query(leader, :length) == 0
+    assert Rafty.query(leader, :length) == {:ok, 0}
+    assert Rafty.query(leader, :length) == {:ok, 0}
   end
 
   test "leader failure", %{cluster_config: cluster_config} do

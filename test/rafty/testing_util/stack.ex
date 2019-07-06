@@ -18,5 +18,5 @@ defmodule Rafty.TestingUtil.Stack do
   end
 
   @impl Rafty.FSM
-  def query(state, :length), do: length(state)
+  def query(state, :length), do: {:ok, length(state)}
 end
