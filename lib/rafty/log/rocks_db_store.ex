@@ -44,7 +44,7 @@ defmodule Rafty.Log.RocksDBStore do
 
   @impl Log
   def close(state) do
-    :rocksdb.close(state.db)
+    :ok = :rocksdb.close(state.db)
   end
 
   @impl Log

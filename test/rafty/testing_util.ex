@@ -1,6 +1,8 @@
 defmodule Rafty.TestingUtil do
   @moduledoc false
 
+  def clean_db(server_name), do: File.rm_rf!(Path.join("db", Atom.to_string(server_name)))
+
   def new_entry(term_index, command, payload) do
     %Rafty.Log.Entry{
       term_index: term_index,

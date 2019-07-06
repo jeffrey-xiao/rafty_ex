@@ -1,14 +1,14 @@
 defmodule RaftyTest do
   use ExUnit.Case, async: true
 
-  alias Rafty.Log
+  alias Rafty.{Log, TestingUtil}
   alias Rafty.TestingUtil.{Cluster, Stack}
 
   doctest Rafty
 
   defp clean_db(cluster_config) do
     :ok = Enum.each(cluster_config, fn {server_name, _node_name} ->
-      File.rm_rf!(Path.join("db", Atom.to_string(server_name)))
+      TestingUtil.clean_db(server_name)
     end)
   end
 
@@ -29,6 +29,7 @@ defmodule RaftyTest do
       ttl: 10 * 60 * 1000 * 1000 * 1000
     }
 
+    clean_db(cluster_config)
     File.mkdir_p!("db")
     on_exit(fn -> clean_db(cluster_config) end)
 

@@ -1,5 +1,5 @@
 defmodule Rafty.FSM.ServerTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Rafty.FSM.Server
   alias Rafty.TestingUtil.Stack
