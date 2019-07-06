@@ -7,9 +7,10 @@ defmodule RaftyTest do
   doctest Rafty
 
   defp clean_db(cluster_config) do
-    :ok = Enum.each(cluster_config, fn {server_name, _node_name} ->
-      TestingUtil.clean_db(server_name)
-    end)
+    :ok =
+      Enum.each(cluster_config, fn {server_name, _node_name} ->
+        TestingUtil.clean_db(server_name)
+      end)
   end
 
   setup do

@@ -13,7 +13,7 @@ defmodule Rafty.FSM.ServerTest do
     args = %{
       server_name: server_name,
       fsm: Stack,
-      ttl: 60,
+      ttl: 60
     }
 
     {:ok, _pid} = Server.start_link(args)
